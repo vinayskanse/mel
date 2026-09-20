@@ -16,6 +16,8 @@
 #include "gfx.h"
 #include "motion.h"
 #include "fly.h"
+#include "bubble.h"
+#include "uplink.h"
 #include "audio.h"
 #include "voice.h"
 #include "buttons.h"
@@ -45,16 +47,31 @@ static unsigned long lastFrame = 0;
 static int pvx0 = 0, pvy0 = 0, pvx1 = LCD_W - 1, pvy1 = LCD_H - 1;
 static bool firstFrame = true;
 
+// Everything with ink in it this frame: the fly, and the band under it when
+// there is a song title in it. The bubble reports an empty box when it is not
+// drawing, including through the last frames of its fade-out -- so the rect
+// still covers it on the frame that clears it, and no ghost of a title is left
+// behind on a panel nothing else is going to repaint.
+static void sceneBbox(int& x0, int& y0, int& x1, int& y1) {
+  fly::bbox(x0, y0, x1, y1);
+  int bx0, by0, bx1, by1;
+  bubble::bbox(bx0, by0, bx1, by1);
+  if (bx1 >= bx0) {
+    x0 = min(x0, bx0); y0 = min(y0, by0);
+    x1 = max(x1, bx1); y1 = max(y1, by1);
+  }
+}
+
 // Draw and send one frame. Only the rectangle the fly covered last frame or
 // covers this frame is touched; the rest of the screen is already black.
 static void renderFrame(uint32_t& drawUs, uint32_t& sendUs) {
   int x0, y0, x1, y1;
-  fly::bbox(x0, y0, x1, y1);
+  sceneBbox(x0, y0, x1, y1);
 
   if (firstFrame) { x0 = 0; y0 = 0; x1 = LCD_W - 1; y1 = LCD_H - 1; firstFrame = false; }
   else { x0 = min(x0, pvx0); y0 = min(y0, pvy0); x1 = max(x1, pvx1); y1 = max(y1, pvy1); }
 
-  fly::bbox(pvx0, pvy0, pvx1, pvy1);
+  sceneBbox(pvx0, pvy0, pvx1, pvy1);
   pvx0 = constrain(pvx0, 0, LCD_W - 1); pvx1 = constrain(pvx1, 0, LCD_W - 1);
   pvy0 = constrain(pvy0, 0, LCD_H - 1); pvy1 = constrain(pvy1, 0, LCD_H - 1);
 
@@ -80,6 +97,7 @@ static void renderFrame(uint32_t& drawUs, uint32_t& sendUs) {
     memset(buf, 0, n * 2);
     gfx::Band b{buf, (int16_t)x0, (int16_t)y, (int16_t)w, (int16_t)h};
     fly::draw(b);
+    bubble::draw(b);
     for (size_t i = 0; i < n; i++) buf[i] = __builtin_bswap16(buf[i]);
     drawUs += micros() - t0;
 
@@ -114,6 +132,7 @@ void setup() {
   const bool a = audio::begin();
   voice::begin();
   buttons::begin();
+  uplink::begin();          // non-blocking: the join finishes in the background
 
   bool m = motion::begin();
   Serial.printf("flybuddy: motion %s, audio %s, band %u B, free heap %u B\n",
@@ -128,6 +147,7 @@ void setup() {
 void loop() {
   motion::update();
   buttons::update();
+  uplink::update();         // the laptop's half of the fly: moods, crumbs, the bubble
 
   // "+" feeds it. It puts the crumb down wherever the fly is; if the fly is in
   // the air it finishes its flight and eats when it lands.
@@ -149,6 +169,7 @@ void loop() {
   lastFrame = now;
 
   fly::update(dt);
+  bubble::update(dt);
   voice::update(dt);      // reads the fly, tells the synthesiser what to sing
 
   static uint32_t drawUs = 0, sendUs = 0;
@@ -161,10 +182,10 @@ void loop() {
   static const char* lastState = "";
   frames++;
   if (now - window > 2000) {
-    Serial.printf("fps %.1f  draw %lu us  wait %lu us  %s/%s  voice %s  heap %u\n",
+    Serial.printf("fps %.1f  draw %lu us  wait %lu us  %s/%s  voice %s  link %s  heap %u\n",
                   frames * 1000.0f / (now - window), (unsigned long)(drawUs / frames),
                   (unsigned long)(sendUs / frames), fly::stateName(), fly::moodName(),
-                  voice::name(), (unsigned)ESP.getFreeHeap());
+                  voice::name(), uplink::status(), (unsigned)ESP.getFreeHeap());
     window = now; frames = 0; drawUs = sendUs = 0;
   }
   if (fly::stateName() != lastState) { lastState = fly::stateName(); Serial.printf("fly: %s\n", lastState); }

@@ -50,6 +50,7 @@ class Stimulus:
     rate_hz: float = 100.0
     until: float = 0.0           # biological seconds; the drive stops at this time
     slots: np.ndarray = field(default=None, repr=False)   # its columns in the draw matrix
+    types: list = field(default_factory=list)             # the names that matched, for the panel
 
     @property
     def size(self) -> int:
@@ -74,22 +75,38 @@ class LiveBrain:
         # matrix, so the kernel's target_slot map is built once. A stimulus that
         # is off simply draws zeros into its columns.
         self.stimuli: dict[str, Stimulus] = {}
+        self.missing: dict[str, list] = {}
         target_list: list[int] = []
+        claimed: set[int] = set()
         for key, (label, desc, sel, rate) in stimuli.items():
-            idx = sorted({i for name in sel for i in self.names.select(name)})
+            idx, used = self._resolve(sel)
             if not idx:
-                raise SystemExit(f"stimulus {key!r} selected no neurons from {sel}")
+                # A stimulus whose cell types this pack does not carry is
+                # dropped, not fatal. The table in sim_server names the
+                # auditory and bitter cells on a reading of the literature
+                # rather than from this pack's own annotations, and a pack
+                # that spells one of them differently should cost that one
+                # button, not the whole brain.
+                self.missing[key] = list(sel)
+                print(f"  stimulus {key!r}: no neurons match {sel}; dropped")
+                continue
+            if claimed.intersection(idx):
+                # One stimulus slot per neuron is a kernel constraint, not a
+                # preference: target_slot maps each neuron to exactly one
+                # column of the draw matrix.
+                self.missing[key] = list(sel)
+                print(f"  stimulus {key!r}: its neurons are already driven by "
+                      f"another stimulus; dropped")
+                continue
+            claimed.update(idx)
             slots = np.arange(len(target_list), len(target_list) + len(idx), dtype=np.int32)
             target_list.extend(idx)
             self.stimuli[key] = Stimulus(key, label, desc, np.array(idx, np.int32),
-                                         rate, slots=slots)
+                                         rate, slots=slots, types=used)
 
-        targets = np.array(target_list, dtype=np.int32)
-        if len(np.unique(targets)) != len(targets):
-            dup = [int(v) for v, c in zip(*np.unique(targets, return_counts=True)) if c > 1]
-            raise SystemExit(f"a neuron is driven by two stimuli (model indices {dup[:5]}); "
-                             "the kernel allows one stimulus slot per neuron")
-        self.targets = targets
+        if not self.stimuli:
+            raise SystemExit("no stimulus resolved to any neuron; check the pack's names sidecar")
+        self.targets = targets = np.array(target_list, dtype=np.int32)
         self.n_slots = len(targets)
 
         slot = np.full(N, -1, dtype=np.int32)
@@ -114,6 +131,25 @@ class LiveBrain:
         self.tick = 0
         self._driven_key = None
         self.reset()
+
+    def _resolve(self, sel) -> tuple[list[int], list[str]]:
+        """Model indices for a selector, and which names actually produced them.
+
+        A selector is a list of cell-type names, or a list of such lists. The
+        list-of-lists form is "try these, then those": it is how a stimulus can
+        name the receptor it would rather drive and the second-order cell it
+        will settle for, and have the pack decide which of the two it has. The
+        first group that matches anything wins outright -- a partial match is
+        still that group's answer, so a pack carrying JO-B_R but not JO-B_L
+        drives one side rather than silently falling through to the next group.
+        """
+        groups = sel if sel and isinstance(sel[0], (list, tuple)) else [sel]
+        for group in groups:
+            hits = {i for name in group for i in self.names.select(name)}
+            if hits:
+                used = [n for n in group if self.names.select(n)]
+                return sorted(hits), used
+        return [], []
 
     # ---- state ------------------------------------------------------------
     def reset(self) -> None:

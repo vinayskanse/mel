@@ -95,21 +95,76 @@
   #pathlabel .p-text { margin-top: 2px; font-size: 13px; font-weight: 650; line-height: 1.25; }
   #pathlabel .p-sub { margin-top: 3px; color: var(--dim); font-size: 10px; line-height: 1.35; }
 
+  /* The right-hand rail: narration on top, the fly under it. It starts below
+     the full-screen button so the two never overlap, and moves up to take that
+     space once the button hides itself. */
+  #rail {
+    position: fixed; top: 60px; right: 16px; width: 300px; z-index: 4;
+    display: flex; flex-direction: column; gap: 10px;
+    pointer-events: none;            /* the canvas keeps the drags */
+    max-height: calc(100vh - 76px);
+  }
   #narrate {
-    position: fixed; top: 16px; right: 16px; width: 300px; z-index: 4;
     background: var(--panel); backdrop-filter: blur(14px);
     border: 1px solid var(--line); border-radius: 12px;
     padding: 13px 15px; opacity: 0; transform: translateY(-6px);
-    transition: opacity .25s, transform .25s; pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    /* Height as well as opacity, so the fly card below does not sit under a
+       gap while the narration is hidden. */
+    max-height: 0; padding-top: 0; padding-bottom: 0; border-width: 0;
+    overflow: hidden;
   }
-  #narrate.on { opacity: 1; transform: none; }
+  #narrate.on {
+    opacity: 1; transform: none;
+    max-height: 190px; padding-top: 13px; padding-bottom: 13px; border-width: 1px;
+  }
   #narrate .n-time {
     font-size: 11px; color: var(--accent); font-weight: 650;
     font-variant-numeric: tabular-nums; letter-spacing: .02em;
   }
   #narrate .n-text { font-size: 15px; font-weight: 600; margin-top: 3px; line-height: 1.35; }
   #narrate .n-sub { font-size: 11px; color: var(--dim); margin-top: 5px; line-height: 1.5; }
-  :fullscreen #narrate, :-webkit-full-screen #narrate { top: 22px; right: 22px; width: 340px; }
+  /* Full screen. The panel is 252 px of controls nobody can reach without
+     leaving, so it goes, and with it the credit line it sits above; what is
+     left is the brain, the narration and the fly. `body.fs` rather than
+     `:fullscreen` because Safari's webkit path does not match the pseudo-class,
+     and the button below is already driven from script for the same reason. */
+  body.fs #panel, body.fs #credit { display: none; }
+  body.fs #rail { top: 22px; right: 22px; width: 344px; }
+  body.fs #hud { bottom: 22px; right: 22px; }
+
+  #flycard {
+    background: var(--panel); backdrop-filter: blur(14px);
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px 13px; pointer-events: auto;
+    display: none;
+  }
+  #flycard.on { display: block; }
+  #flycard .f-head {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim);
+  }
+  #flycard .f-head b { color: var(--text); font-weight: 650; letter-spacing: 0; text-transform: none; font-size: 12px; }
+  #flycard .f-head .f-state { margin-left: auto; font-variant-numeric: tabular-nums; }
+  /* The bubble, as the board draws it: what the fly appears to say, in a band,
+     with the artist on its own line under it. */
+  #flycard .f-say {
+    margin: 8px 0 0; font-size: 15px; font-weight: 600; line-height: 1.3;
+    min-height: 20px; color: var(--text);
+  }
+  #flycard .f-say.quiet { color: var(--dim); font-weight: 500; font-size: 13px; }
+  #flycard .f-song { color: var(--dim); font-size: 11px; margin-top: 2px; min-height: 15px; }
+  #flycard .f-why { color: var(--dim); font-size: 11px; margin-top: 7px; line-height: 1.45; }
+  #flycard .f-btns { display: flex; gap: 6px; margin-top: 9px; }
+  #flycard .f-btns button { margin-top: 0; flex: 1; padding: 7px 6px; font-size: 12px; }
+  button.act.sweet { background: linear-gradient(180deg, #86e3a8, #4cc47c); color: #10301d; }
+  button.act.bitter { background: linear-gradient(180deg, #f0919a, #d9606d); color: #35131a; }
+  #flycard .f-mood {
+    display: inline-block; margin-top: 8px; padding: 2px 7px; border-radius: 5px;
+    background: #1d2433; border: 1px solid var(--line);
+    font-size: 10px; letter-spacing: .06em; color: var(--accent);
+  }
+  #flycard .f-mood .b { color: var(--dim); }
   #fs {
     position: fixed; top: 16px; right: 16px; z-index: 5;
     width: 34px; height: 34px; display: grid; place-content: center;
@@ -121,7 +176,7 @@
   #fs svg { display: block; }
   /* Nothing to click in full screen -- Esc and `f` both leave, so the button
      only gets in the way of the picture. */
-  :fullscreen #fs, :-webkit-full-screen #fs { display: none; }
+  body.fs #fs { display: none; }
   #hud {
     position: fixed; right: 16px; bottom: 16px; text-align: right;
     color: var(--dim); font-size: 11px; line-height: 1.7;
@@ -183,8 +238,24 @@
     <div id="readouts"></div>
   </div>
 
+  <div class="group" id="flygroup" style="display:none">
+    <div class="label">The fly&rsquo;s ears</div>
+    <div class="note" id="flynote"></div>
+    <div class="row" style="margin-top:8px">
+      <input type="checkbox" id="flisten2"><label for="flisten2">Listening</label>
+    </div>
+    <button class="act ghost" id="fname2">Name what&rsquo;s playing</button>
+    <div class="note">A thumbs-up is a real sweet reward: it drives the 17 sugar
+      receptor neurons of the right labellum, and you can watch it reach
+      <b>MN9</b> above.</div>
+  </div>
+
   <div class="group" id="pathgroup" style="display:none">
     <div class="label">Pathway</div>
+    <div class="row">
+      <input type="checkbox" id="autotrace" checked>
+      <label for="autotrace">Trace automatically on a stimulus</label>
+    </div>
     <div class="row"><input type="checkbox" id="pathon"><label for="pathon">Trace one pathway</label></div>
     <div id="pathbody" style="display:none">
       <select id="pathpick">
@@ -221,7 +292,25 @@
     <path d="M1.5 5.2V1.5h3.7M9.8 1.5h3.7v3.7M13.5 9.8v3.7H9.8M5.2 13.5H1.5V9.8"/>
   </svg>
 </button>
-<div id="narrate"><div class="n-time"></div><div class="n-text"></div><div class="n-sub"></div></div>
+<div id="rail">
+  <div id="narrate"><div class="n-time"></div><div class="n-text"></div><div class="n-sub"></div></div>
+  <div id="flycard">
+    <div class="f-head"><span class="dot" id="fdot"></span><b>The fly&rsquo;s ears</b>
+      <span class="f-state" id="fstate">off</span></div>
+    <div class="f-say quiet" id="fsay">nothing yet</div>
+    <div class="f-song" id="fsong"></div>
+    <div class="f-mood" id="fmood"><span class="b">face</span> IDLE</div>
+    <div class="f-why" id="fwhy"></div>
+    <div class="f-btns">
+      <button class="act ghost" id="flisten">Listen</button>
+      <button class="act ghost" id="fname">Name it now</button>
+    </div>
+    <div class="f-btns">
+      <button class="act sweet" id="fyes">Right &mdash; sweet</button>
+      <button class="act bitter" id="fno">Wrong &mdash; bitter</button>
+    </div>
+  </div>
+</div>
 <div id="pathlabel"><div class="p-time"></div><div class="p-text"></div><div class="p-sub"></div></div>
 <div id="hud"></div>
 <div id="credit">
@@ -416,22 +505,64 @@ console.log('model bounding box', box.min.toArray().map((v) => v.toFixed(3)),
 
 const PANEL_PX = 284;   // the control panel's box: 252 wide at a 16 px margin, plus a gap
 
-function frame(margin = 1.25) {
+// Safari answers only on the webkit spelling, which is also why the panel hides
+// off a `body.fs` class rather than off `:fullscreen`.
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+// A camera move that is asked for rather than performed. The brain is a large
+// slowly rotating object and a cut across it reads as a glitch, so every move
+// -- recentring, a pathway framing itself, the return afterwards -- goes
+// through one ease, and they cannot jump or fight each other.
+let camEase = null;
+function moveCamera(target, position, near, far, secs = 0) {
+  if (secs <= 0) {
+    camEase = null;
+    controls.target.copy(target);
+    camera.position.copy(position);
+    camera.near = near; camera.far = far;
+    camera.updateProjectionMatrix();
+    controls.update();
+    return;
+  }
+  camEase = { t: 0, secs, near, far,
+              t0: controls.target.clone(), t1: target.clone(),
+              p0: camera.position.clone(), p1: position.clone() };
+}
+
+function tickCamera(dt) {
+  if (!camEase) return;
+  camEase.t = Math.min(1, camEase.t + dt / camEase.secs);
+  const x = camEase.t;
+  const k = x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;   // ease in and out
+  controls.target.lerpVectors(camEase.t0, camEase.t1, k);
+  camera.position.lerpVectors(camEase.p0, camEase.p1, k);
+  camera.near = camEase.near; camera.far = camEase.far;
+  camera.updateProjectionMatrix();
+  if (camEase.t >= 1) camEase = null;
+}
+
+// Touching the mouse ends any move in progress. An ease that keeps pulling
+// against a drag feels like the page is broken, whatever it was doing.
+controls.addEventListener('start', () => { camEase = null; });
+
+function frame(margin = 1.25, secs = 0) {
   const dist = sphere.radius / Math.sin(THREE.MathUtils.degToRad(camera.fov) / 2) * margin;
 
   // Centre the brain in the space left over beside the panel, not in the whole
   // window, and lift it a little clear of the credit line. Both are measured in
   // world units at the viewing distance, so they hold at any window size or DPI.
+  // In full screen there is no panel and no credit line, so there is no offset
+  // either -- which is what puts the brain in the middle when you press `f`.
   const worldPerPx = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) / innerHeight;
-  const dx = innerWidth > 760 ? (PANEL_PX / 2) * worldPerPx : 0;
-  const dy = 0.045 * innerHeight * worldPerPx;
+  const full = isFullscreen();
+  const dx = (innerWidth > 760 && !full) ? (PANEL_PX / 2) * worldPerPx : 0;
+  const dy = full ? 0 : 0.045 * innerHeight * worldPerPx;
 
-  controls.target.set(-dx, -dy, 0);
-  camera.position.set(-dx, sphere.radius * 0.28 - dy, dist);
-  camera.near = dist * 0.01;
-  camera.far = dist * 10;
-  camera.updateProjectionMatrix();
-  controls.update();
+  moveCamera(new THREE.Vector3(-dx, -dy, 0),
+             new THREE.Vector3(-dx, sphere.radius * 0.28 - dy, dist),
+             dist * 0.01, dist * 10, secs);
 }
 frame();
 
@@ -500,12 +631,21 @@ fsBtn.addEventListener('click', toggleFullscreen);
 addEventListener('keydown', (e) => {
   if (e.key === 'f' && !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) toggleFullscreen();
 });
-// Safari does not match :fullscreen on the webkit path, so drive the icon here.
+// Safari does not match :fullscreen on the webkit path, so the class the CSS
+// keys off is set here, for every browser, from the one answer both spellings
+// agree on. Everything that hides in full screen hides off `body.fs`.
 for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) {
   document.addEventListener(ev, () => {
-    const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    const on = isFullscreen();
+    document.body.classList.toggle('fs', on);
     fsBtn.style.display = on ? 'none' : 'grid';
-    setTimeout(resize, 60);     // the viewport settles a frame or two later
+    // The viewport settles a frame or two later, and the brain has to slide
+    // over into the space the panel has just given up. Unless a pathway owns
+    // the camera, in which case leave it where it is.
+    setTimeout(() => {
+      resize();
+      if (!pathGroup || !pathGroup.visible) frame(1.25, 0.6);
+    }, 60);
   });
 }
 const applyOrient = () => { orient.rotation.x = flipy.checked ? Math.PI : 0; };
@@ -534,12 +674,17 @@ renderer.setAnimationLoop(() => {
   if (spin.checked) spinner.rotation.y += dt * 0.22;
   if (typeof tickDecay === 'function') tickDecay(dt);
   if (typeof tickPathway === 'function') tickPathway(dt);
+  tickCamera(dt);               // before controls.update(), which applies damping
   controls.update();
   renderer.render(scene, camera);
 
-  hud.innerHTML = (pathGroup && pathGroup.visible)
-    ? `<b>${Math.min(pathT, pathSpan).toFixed(0)}</b> ms after the stimulus &middot; <b>${pathMeta.neurons.length}</b> neurons on the path<br>${pathMeta.stimulusLabel} \u2192 ${pathMeta.readout} &middot; <b>${fps.toFixed(0)}</b> fps`
-    : live
+  const tracing = pathGroup && pathGroup.visible;
+  const pathLine = tracing
+    ? `<b>${Math.min(pathT, pathSpan).toFixed(0)}</b> ms after the stimulus &middot;
+       <b>${pathMeta.neurons.length}</b> neurons on the path &middot;
+       ${pathMeta.stimulusLabel} \u2192 ${pathMeta.readout}`
+    : '';
+  const liveLine = live
     ? `<b>${live.t.toFixed(2)}</b> s brain time &middot; <b>${live.wall.toFixed(1)}</b> ms/chunk
        &middot; <b>${(live.bio / live.wall).toFixed(2)}×</b> real time<br>
        <b>${live.nSpikes.toLocaleString()}</b> spikes &middot;
@@ -547,6 +692,13 @@ renderer.setAnimationLoop(() => {
        <b>${fps.toFixed(0)}</b> fps`
     : `<b>${fps.toFixed(0)}</b> fps &middot; <b>${n.toLocaleString()}</b> somas
        &middot; <b>${brainMeta.compartments.length}</b> neuropils<br>drag to orbit &middot; scroll to zoom`;
+
+  // A manual trace replaces the live figures -- the point cloud is hidden and
+  // the brain is not what is being shown. An automatic one sits over a brain
+  // that is still running, so both lines stay.
+  hud.innerHTML = (tracing && !autoTracing) ? `${pathLine} &middot; <b>${fps.toFixed(0)}</b> fps`
+                : tracing ? `${pathLine}<br>${liveLine}`
+                : liveLine;
 });
 
 document.getElementById('loading').classList.add('done');
@@ -674,16 +826,16 @@ function showPathway(key) {
   pathT = 0; pathStep = -1; pathPlaying = true;
 }
 
-function framePathway(on) {
+function framePathway(on, secs = 0) {
   if (on && pathGroup) {
     const box = new THREE.Box3().setFromObject(pathGroup);
     const sph = box.getBoundingSphere(new THREE.Sphere());
     const dist = sph.radius / Math.sin(THREE.MathUtils.degToRad(camera.fov) / 2) * 1.5;
-    controls.target.copy(sph.center);
-    camera.position.set(sph.center.x, sph.center.y + sph.radius * 0.3, sph.center.z + dist);
-    camera.near = dist * 0.005; camera.far = dist * 20;
-    camera.updateProjectionMatrix(); controls.update();
-  } else frame();
+    moveCamera(sph.center.clone(),
+               new THREE.Vector3(sph.center.x, sph.center.y + sph.radius * 0.3,
+                                 sph.center.z + dist),
+               dist * 0.005, dist * 20, secs);
+  } else frame(1.25, secs);
 }
 
 function setNarration(on, time, text, sub) {
@@ -710,7 +862,57 @@ function setPathLabel(on, time, text, sub, cells = []) {
   pathLabel.style.top = `${(-anchor.y * 0.5 + 0.5) * innerHeight}px`;
 }
 
+// ---- tracing a pathway on its own ------------------------------------------
+// A stimulus fires -- because a button was pressed, or because the fly was just
+// told its guess was right -- and the route that stimulus takes through the
+// brain draws itself over the top of the live one.
+//
+// Unlike the manual trace below, the point cloud stays on and the brain keeps
+// turning. The spikes and the route are the same event seen two ways, 27 ms of
+// biological time apart, and showing them together is the whole reason the
+// music and the connectome are in one page at all. The camera leans in for the
+// duration and leans back out afterwards, so the live view is never lost.
+const AUTO_SECS = 5.0;      // how long an automatic trace takes to play
+const AUTO_HOLD = 1.6;      // seconds to sit on the finished path before leaving
+const autoOn = document.getElementById('autotrace');
+let autoTracing = false, autoHold = 0, autoFrom = null;
+
+async function autoTrace(key) {
+  if (!autoOn.checked || pathOn.checked) return;    // the manual trace owns the view
+  let p;
+  try { p = await loadPathway(key); }
+  catch (e) { return; }                             // no traced route for this one
+  if (pathOn.checked) return;                       // it was switched on while loading
+
+  // Where to go back to. Captured on the first auto-trace only: a second
+  // stimulus arriving mid-trace should return to the live view at the end, not
+  // to wherever the first pathway had put the camera.
+  if (!autoTracing) {
+    autoFrom = { target: controls.target.clone(), position: camera.position.clone(),
+                 near: camera.near, far: camera.far };
+  }
+  for (const k in pathCache) pathCache[k].group.visible = false;
+  pathGroup = p.group; pathMeta = p.meta; pathSteps = p.steps; pathSpan = p.span;
+  pathGroup.visible = true;
+  pathT = 0; pathStep = -1; pathPlaying = true;
+  autoTracing = true; autoHold = 0;
+  framePathway(true, 0.9);
+}
+
+function endAutoTrace() {
+  if (!autoTracing) return;
+  autoTracing = false;
+  if (pathGroup) pathGroup.visible = false;
+  pathGroup = null;
+  setPathLabel(false);
+  if (autoFrom) {
+    moveCamera(autoFrom.target, autoFrom.position, autoFrom.near, autoFrom.far, 0.9);
+    autoFrom = null;
+  }
+}
+
 pathOn.addEventListener('change', async () => {
+  endAutoTrace();
   const on = pathOn.checked;
   if (on) {
     try { await loadPathway(pathPick.value); }
@@ -744,7 +946,12 @@ pdur.addEventListener('input', () => { pdurv.textContent = `${(+pdur.value).toFi
 function tickPathway(dt) {
   if (!pathGroup || !pathGroup.visible) { return; }
   if (pathPlaying) {
-    pathT += dt * (pathSpan / +pdur.value);
+    // An automatic trace has its own pace. The `Play over` slider is inside
+    // the manual pathway body, which is collapsed when nobody asked for a
+    // manual trace, so reading it here would tie the automatic one to a
+    // control that is not on screen.
+    const over = autoTracing ? AUTO_SECS : +pdur.value;
+    pathT += dt * (pathSpan / over);
     if (pathT > pathSpan) { pathT = pathSpan; pathPlaying = false; }
   }
   const travelMs = pathSpan * TRAVEL / (1 + TRAVEL);
@@ -767,6 +974,13 @@ function tickPathway(dt) {
     const step = pathSteps[pathStep];
     setPathLabel(true, `${step.ms} ms`, step.text, step.sub, step.cells);
   }
+
+  // An automatic trace lets go of the camera by itself; a manual one is the
+  // user's and stays until they say otherwise.
+  if (autoTracing && !pathPlaying) {
+    autoHold += dt;
+    if (autoHold > AUTO_HOLD) endAutoTrace();
+  }
 }
 
 // Offer the pathway panel as soon as the files are there.
@@ -788,6 +1002,90 @@ const spdEl = document.getElementById('spd'), spdv = document.getElementById('sp
 let ws = null, meta = null, retry = 700, lastStim = null;
 const meters = {};
 
+// ---- the fly's ears --------------------------------------------------------
+// The same four facts the board gets: is it listening, what did it last hear,
+// what is it showing, and which face it is pulling. This panel is the only one
+// that survives into full screen, because it is the only one you need to keep
+// using once the controls are gone.
+const flyCard = document.getElementById('flycard');
+const flyGroup = document.getElementById('flygroup');
+const flyNote = document.getElementById('flynote');
+const fDot = document.getElementById('fdot'), fState = document.getElementById('fstate');
+const fSay = document.getElementById('fsay'), fSong = document.getElementById('fsong');
+const fMood = document.getElementById('fmood'), fWhy = document.getElementById('fwhy');
+const listenBox = document.getElementById('flisten2');
+let flyState = null;
+
+// A fly event has something to say that a per-frame spike count does not, so it
+// holds the narration for a few seconds against the live commentary, which
+// would otherwise overwrite it ten times a second.
+let narHold = 0;
+
+function flyAction(action, extra = {}) {
+  send({ cmd: 'fly', action, ...extra });
+}
+for (const id of ['flisten', 'flisten2']) {
+  document.getElementById(id).addEventListener('click', () => {
+    flyAction('listen', { on: !(flyState && flyState.armed) });
+  });
+}
+// The checkbox in the panel is a button in disguise: the server owns whether
+// the ears are on, so the box is set from the answer, never from the click.
+listenBox.addEventListener('change', (e) => { e.preventDefault(); });
+for (const id of ['fname', 'fname2']) {
+  document.getElementById(id).addEventListener('click', () => flyAction('identify'));
+}
+document.getElementById('fyes').addEventListener('click',
+  () => flyAction('reward', { reward: 'sugar' }));
+document.getElementById('fno').addEventListener('click',
+  () => flyAction('reward', { reward: 'bitter' }));
+
+function onFly(m) {
+  const f = flyState = m.fly, r = m.reaction || {};
+  flyCard.classList.add('on');
+  fDot.classList.toggle('on', !!f.armed);
+  fState.textContent = f.armed ? 'listening' : 'off';
+  listenBox.checked = !!f.armed;
+
+  const said = f.say || '';
+  fSay.textContent = said || (f.armed ? 'listening\u2026' : 'nothing yet');
+  fSay.classList.toggle('quiet', !said);
+  fSong.textContent = f.title ? (f.artist ? `${f.title} \u2014 ${f.artist}` : f.title) : '';
+  fMood.innerHTML = `<span class="b">face</span> ${f.mood}`
+    + (r.feed ? ' <span class="b">+ crumb</span>' : '');
+  fWhy.textContent = r.detail || '';
+
+  // A drive the connectome could not honour -- `sound` on a pack without
+  // Johnston's organ -- is said plainly rather than quietly skipped.
+  if (r.stimulus && !m.fired) {
+    fWhy.textContent = `${r.detail}  (this pack has no ${r.stimulus} neurons, `
+      + 'so nothing was driven)';
+  }
+  if (r.headline) {
+    setNarration(true, live ? `${live.t.toFixed(2)} s \u00b7 ears` : 'ears',
+                 r.headline, r.detail);
+    narHold = performance.now() + 6000;
+  }
+}
+
+function onFlyAck(m) {
+  if (m.error) {
+    flyNote.innerHTML = `<b>${m.error}</b>`;
+    fWhy.textContent = m.error;
+  }
+}
+
+// Every stimulus, whoever fired it: a button here, a button on another screen,
+// or the fly being told its guess was right. One message means the narration
+// and the automatic trace do not have to care which.
+function onFired(m) {
+  const s = meta && meta.stimuli.find((x) => x.key === m.key);
+  lastStim = { label: s ? s.label : m.key, size: s ? s.size : 0,
+               desc: m.why || (s ? s.description : ''),
+               ms: m.ms, at: performance.now() };
+  autoTrace(m.key);
+}
+
 durEl.addEventListener('input', () => { durv.textContent = `${durEl.value} ms`; });
 spdEl.addEventListener('input', () => {
   spdv.textContent = `${(+spdEl.value).toFixed(2)}×`;
@@ -804,7 +1102,8 @@ document.getElementById('reset').addEventListener('click', () => {
     m.smooth = 0; m.val.textContent = '0 Hz'; m.bar.style.width = '0%';
     m.dot.classList.remove('on');
   }
-  live = null; lastStim = null; setNarration(false);
+  live = null; lastStim = null; narHold = 0; setNarration(false);
+  endAutoTrace();
 });
 
 function send(obj) {
@@ -817,11 +1116,17 @@ function buildPanel(m) {
     const b = document.createElement('button');
     b.className = 'act';
     b.innerHTML = `${s.label} <span style="opacity:.6;font-weight:400">${s.size}</span>`;
-    b.title = `${s.description}  (${s.size} neurons at ${s.rateHz} Hz)`;
+    // The cell types it actually resolved to, not the ones the table asked
+    // for. They differ for `sound`, which takes Johnston's organ if the pack
+    // has it and settles for AMMC-A1 if not, and the difference is the
+    // difference between the ear and one synapse past it.
+    b.title = `${s.description}\n\n${s.size} neurons at ${s.rateHz} Hz`
+      + (s.types && s.types.length ? `\n${s.types.join(', ')}` : '');
     b.addEventListener('click', () => {
+      // The server echoes every stimulus back as a `fired` message, and that
+      // is what sets the narration and starts the trace -- so a press here and
+      // a thumbs-up on the fly card go down exactly the same path.
       send({ cmd: 'trigger', key: s.key, ms: +durEl.value });
-      lastStim = { label: s.label, size: s.size, desc: s.description,
-                   ms: +durEl.value, at: performance.now() };
       b.classList.remove('firing'); void b.offsetWidth; b.classList.add('firing');
     });
     stimHost.appendChild(b);
@@ -888,7 +1193,7 @@ function onFrame(buf) {
   // Live narration. The pathway view has its own script; this is for the
   // free-running brain, and it is the only explanation on screen in full
   // screen, where the control panel is easy to miss.
-  if (!(pathGroup && pathGroup.visible)) {
+  if (!(pathGroup && pathGroup.visible) && performance.now() > narHold) {
     const mn9 = meta.readouts.indexOf('MN9_L');
     const gf = meta.readouts.findIndex((r) => r.startsWith('DNp01'));
     const firing = mn9 >= 0 && meters['MN9_L'] && meters['MN9_L'].smooth > 3;
@@ -923,6 +1228,9 @@ function connect() {
   ws.onmessage = (e) => {
     if (typeof e.data === 'string') {
       const m = JSON.parse(e.data);
+      if (m.type === 'fired') { onFired(m); return; }
+      if (m.type === 'fly') { onFly(m); return; }
+      if (m.type === 'flyAck') { onFlyAck(m); return; }
       if (m.type === 'hello') {
         // Spike frames address this page's point cloud by index. If the server
         // loaded a different somas.bin, every index would still be in range and
@@ -942,7 +1250,29 @@ function connect() {
         note.innerHTML = `<b>${m.neurons.toLocaleString()}</b> neurons,
           <b>${(m.edges / 1e6).toFixed(1)}M</b> connections stepping at
           ${m.dtMs} ms. ${(m.neurons - m.drawn).toLocaleString()} have no soma
-          position and are simulated but not drawn.`;
+          position and are simulated but not drawn.`
+          + ((m.dropped && m.dropped.length)
+             ? `<br><br>No cells in this pack match
+                <b>${m.dropped.join('</b>, <b>')}</b>, so ${m.dropped.length > 1
+                ? 'those buttons are' : 'that button is'} not offered. Run
+                <code>find_types.py</code> to see how it names them.`
+             : '');
+
+        // The ears are optional: the brain is the program, and it starts
+        // without ffmpeg, without a key and without a microphone. When they
+        // are there, the fly gets its panel and its card.
+        const fly = m.fly || {};
+        flyGroup.style.display = fly.available ? '' : 'none';
+        flyCard.classList.toggle('on', !!fly.available);
+        if (fly.available) {
+          flyState = fly;
+          listenBox.checked = !!fly.armed;
+          fDot.classList.toggle('on', !!fly.armed);
+          fState.textContent = fly.armed ? 'listening' : 'off';
+          flyNote.innerHTML = `<b>${fly.songs}</b> song${fly.songs === 1 ? '' : 's'}
+            remembered. It guesses from memory first and only asks about what it
+            cannot place, so a song costs one lookup in its life.`;
+        }
       }
     } else onFrame(e.data);
   };
@@ -950,6 +1280,11 @@ function connect() {
     note.innerHTML = 'Simulator <b>not connected</b>. Start it with '
                    + '<code>python sim_server.py</code>.';
     stimHost.innerHTML = '';
+    // The ears live in that process too, so they are gone as well. Leaving the
+    // card up with its last guess on it would be a lie about a live thing.
+    flyCard.classList.remove('on');
+    flyGroup.style.display = 'none';
+    flyState = null;
     ws = null;
     setTimeout(connect, retry);
     retry = Math.min(retry * 1.6, 8000);

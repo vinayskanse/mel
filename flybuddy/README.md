@@ -9,9 +9,10 @@ Tall vermilion ovals for eyes, a light peach face plate that domes into a
 forehead above them and a chin below, wide pale wings, and a warm halo hugging
 the silhouette.
 
-This round is the face only, wired honestly to the accelerometer. No audio, no
-WiFi, no touch — touch does not work on this unit
-([`../context/touchscreen.md`](../context/touchscreen.md)).
+The face is wired honestly to the accelerometer, and the fly is now also on the
+WiFi: the laptop running [`../visualization/sim_server.py`](../visualization/README.md)
+tells it what to feel about whatever music is playing. No touch — touch does not
+work on this unit ([`../context/touchscreen.md`](../context/touchscreen.md)).
 
 ## What it does
 
@@ -54,9 +55,21 @@ The rest of the screen is already black.
 | Frame rate | 30.0 fps, measured on the board |
 | Draw | 27.0 ms/frame |
 | Waiting on the panel | 0.8 ms/frame — the SPI push runs on the other core |
-| Static RAM | 58.5 KB (17%), of which 30 KB is the two bands |
-| Free heap | 304,804 B, and it does not move |
-| Flash | 356 KB (27%) |
+| Static RAM | 83.4 KB (26%), of which 30 KB is the two bands |
+| Flash | 976 KB (76%) |
+
+The frame figures are from the board, before WiFi. **Flash and static RAM are
+the compiler's, and the rest of this row has not been re-measured on hardware
+since `uplink.cpp` went in** — the free heap in particular will be lower,
+because the WiFi stack allocates, and the two-second serial line is what to
+read it off. It compiles and it fits with 242 KB of heap headroom; that is all
+that is confirmed.
+
+Flash went from 27% to 76% and static RAM from 17% to 26% in one step, and all
+of it is the WiFi and lwIP stack that `uplink.cpp` pulls in. Nothing in the
+renderer grew. If the board ever needs that space back, dropping `uplink.cpp`
+and its two includes returns the firmware to exactly what it was, and the fly
+goes on choosing its own moods.
 
 Three things got it from 11 fps to 30, with room to spare:
 
@@ -114,6 +127,59 @@ python -m esptool --port /dev/cu.usbmodem2101 write_flash 0x10000 flybuddy/build
 Serial at 115200 prints one line every two seconds: frame rate, where the time
 goes, what the fly is doing, and the free heap.
 
+## The laptop's half of the fly
+
+The fly listens to music on the laptop, not on the board — the host has the
+microphone, the memory of every song it has heard and the connectome. What
+crosses to the board is the result: a face, sometimes a crumb, and two lines of
+text to put under its chin.
+
+That is one socket, and the board makes no requests over it. It is never given
+an address either: `sim_server.py` broadcasts `flybuddy <port>` to the LAN twice
+a second and the board dials whoever sent it, so a different network or a new
+DHCP lease needs no reflash. Put the SSID and password in `wifi_config.h` —
+copy `wifi_config.example.h`; the real one is gitignored because it holds a
+password.
+
+```
+MOOD <NAME> <seconds>    pull this face; 0 seconds holds it
+AUTO                     stop overriding; choose your own again
+FEED                     a crumb goes down: it eats, then looks pleased
+SAY <text> / SUB <text>  the two lines under the face; SAY with nothing clears
+PING                     keep the socket honest
+```
+
+Everything here degrades to nothing. No WiFi, laptop closed, or a guest network
+with client isolation — which passes neither broadcast nor peer-to-peer traffic
+— and the fly behaves exactly as it did before any of this existed. `uplink::update()`
+never blocks for more than the 400 ms it will spend on one failed connect every
+two seconds, and it is not on the path of a frame.
+
+The serial line's two-second status now carries `link looking` / `dialling` /
+`linked` / `wifi`, which says which of the two steps it is stuck on.
+
+## Words under the face
+
+The fly does not speak. Its voice is `song.cpp` — wingbeats and the pulse train
+of a real *D. melanogaster* courtship song — so the name of a song is *shown*,
+the way a comic panel puts words on an animal that has never spoken in its life,
+and the speaker keeps buzzing throughout.
+
+Text is the one thing in this firmware that is not analytic: letterforms are not
+conics. `text.cpp` walks Adafruit_GFX's glyph bitmaps — FreeSans9pt7b for the
+title, TomThumb for the artist, the same font the deskbuddy's `music_id.cpp`
+drew titles in — and writes them through the same `gfx::blend` as everything
+else, into the same 15 KB band. The library's own canvas is not used: a 240x296
+one would be 142 KB, which is the whole thing this renderer exists to avoid.
+
+```sh
+preview/bubblepv       # renders the band on the Mac, writes out_bubble_*.ppm
+```
+
+Worth running, because it draws through the same 32-row band split the board
+uses, and a glyph straddling a band boundary is exactly the failure that would
+be invisible on a single full-size canvas.
+
 ## The files
 
 | File | |
@@ -121,9 +187,13 @@ goes, what the fly is doing, and the free heap.
 | `flybuddy.ino` | frame loop, the band pipeline, the sender task |
 | `fly.cpp` | the whole animal: proportions, springs, idle behaviour, the sit/fly/land machine |
 | `gfx.h` / `gfx.cpp` | the band canvas, antialiased rotated ellipses, strokes, shading |
+| `text.cpp` | glyph bitmaps into a band; the one place with a bitmap in it |
+| `bubble.cpp` | the band under the face: what the fly appears to be saying |
+| `uplink.cpp` | WiFi, finding the laptop, and the line protocol above |
 | `lcd.cpp` | JD9853, from the deskbuddy firmware, reworked for band blits |
 | `motion.cpp` | LIS2DH12, from the deskbuddy firmware, audio coupling removed |
 | `board_config.h` | pins, all verified — see [`../context/hardware.md`](../context/hardware.md) |
+| `wifi_config.h` | SSID and password. Gitignored; copy `wifi_config.example.h` |
 
 `lcd.cpp` and `motion.cpp` came from the deskbuddy firmware, which lives outside
 this repo at `~/Documents/test_jovian_device/deskbuddy` (its `venv` is also where
@@ -134,6 +204,9 @@ The renderer and the fly are new.
 
 ## Next
 
-The other nine faces on the design sheet — excited, eating, sleeping, curious,
-angry, low battery — then sound through the ES8311, and the buttons
-(`+` GPIO 40, `-` GPIO 39, both active LOW). See [`PLAN.md`](PLAN.md).
+The mic. The board has an ES7210 at I2C 0x40, the same part the deskbuddy
+records through, and `learning/service.py` is already listening on the
+deskbuddy's own song protocol for it. Porting `mic.cpp` across would let the fly
+hear the room it is actually sitting in rather than the room the laptop is in —
+which is the same room today, and will not always be. Until then the laptop's
+microphone is the fly's ear, and the board is its face. See [`PLAN.md`](PLAN.md).

@@ -164,18 +164,40 @@ atomically, and are not committed.
 | `says.py` | what the bubble shows, and which face goes with it |
 | `ears.py` | the loop: guess, ask, remember, and how often to bother |
 | `service.py` | HTTP for the desk, the board's own TCP port |
+| `events.py` | the notice board: how one decision reaches the brain and the face |
 
 ```sh
 python -m unittest discover -s learning -p 'test_*.py'
 ```
 
+## Where this ends up
+
+Nothing here is a demo on its own. `visualization/sim_server.py` runs this
+package in its own process and subscribes to `events.py`, so every decision
+above lands in two more places at once - see
+[`../visualization/README.md`](../visualization/README.md) for the table:
+
+- **The connectome.** Hearing something drives the fly's auditory neurons, and
+  agreeing with its guess drives the 17 sugar receptor neurons of the right
+  labellum, through 24.5M synapses, to the motor neuron that extends the
+  proboscis. A thumbs-up is a real sweet reward, not a flag in a JSON file.
+- **The board.** The bubble this package writes is drawn under the fly's face
+  on the desk, and the face changes with it: dancing for a song it knows,
+  excited for one it has just been told, curious for one nobody can name.
+
+`events.py` is how, and it is a notice board with no sockets in it: publishing
+is a function call, so none of this added a network round trip and a song still
+costs at most one Shazam lookup in its life.
+
 ## Not done yet
 
-The firmware side. The board has the mic for it - ES7210 at I2C 0x40, the same
-part the deskbuddy records through - but `flybuddy/` is playback-only today.
-Flashing day needs `mic.cpp` ported over, a `music_id.cpp` pointed at port
-8021, `doublePressedPlus()` alongside the existing `doublePressedMinus()` in
-`buttons.cpp`, and the bubble drawn under the face.
+The mic. The board has one - ES7210 at I2C 0x40, the same part the deskbuddy
+records through - but `flybuddy/` is playback-only, so the ear in the loop
+today is the laptop's. The TCP port above already speaks the deskbuddy's song
+protocol for it; what is missing is `mic.cpp` ported over, a `music_id.cpp`
+pointed at port 8021, and `doublePressedPlus()` alongside the existing
+`doublePressedMinus()` in `buttons.cpp`. The bubble under the face is done
+(`flybuddy/bubble.cpp`).
 
 One thing is unverified: no commercially released music was available on this
 machine, so while the Shazam round trip is confirmed working - it accepts the
