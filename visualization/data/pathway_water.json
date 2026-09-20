@@ -1,0 +1,274 @@
+{
+ "source": "MaleCNS v1.0 skeletons, FlyEM/HHMI Janelia + Google Research, CC BY 4.0",
+ "stimulus": "water",
+ "stimulusLabel": "Water",
+ "stimulusTypes": [
+  "LB3a_R"
+ ],
+ "readout": "DNg67_R",
+ "quantization": {
+  "origin": [
+   33024.0,
+   38948.99609375,
+   81408.53125
+  ],
+  "span": [
+   708546.4375,
+   399745.09375,
+   334591.46875
+  ],
+  "bits": 16
+ },
+ "gridNm": 700.0,
+ "neurons": [
+  {
+   "body": 183061,
+   "name": "LB3a_R",
+   "firstMs": 1,
+   "spikes": 13,
+   "driven": true,
+   "readout": false,
+   "vertexOffset": 153272,
+   "vertexCount": 474,
+   "distOffset": 156116,
+   "edgeOffset": 157064,
+   "edgeCount": 474
+  },
+  {
+   "body": 518542,
+   "name": "LB3a_R",
+   "firstMs": 2,
+   "spikes": 14,
+   "driven": true,
+   "readout": false,
+   "vertexOffset": 176216,
+   "vertexCount": 624,
+   "distOffset": 179960,
+   "edgeOffset": 181208,
+   "edgeCount": 633
+  },
+  {
+   "body": 199308,
+   "name": "LB3a_R",
+   "firstMs": 3,
+   "spikes": 8,
+   "driven": true,
+   "readout": false,
+   "vertexOffset": 160856,
+   "vertexCount": 470,
+   "distOffset": 163676,
+   "edgeOffset": 164616,
+   "edgeCount": 474
+  },
+  {
+   "body": 374701,
+   "name": "LB3a_R",
+   "firstMs": 4,
+   "spikes": 13,
+   "driven": true,
+   "readout": false,
+   "vertexOffset": 168408,
+   "vertexCount": 482,
+   "distOffset": 171300,
+   "edgeOffset": 172264,
+   "edgeCount": 494
+  },
+  {
+   "body": 140619,
+   "name": "LB3a_R",
+   "firstMs": 8,
+   "spikes": 6,
+   "driven": true,
+   "readout": false,
+   "vertexOffset": 119072,
+   "vertexCount": 775,
+   "distOffset": 123722,
+   "edgeOffset": 125272,
+   "edgeCount": 781
+  },
+  {
+   "body": 141663,
+   "name": "LB3a_R",
+   "firstMs": 9,
+   "spikes": 14,
+   "driven": true,
+   "readout": false,
+   "vertexOffset": 131520,
+   "vertexCount": 781,
+   "distOffset": 136206,
+   "edgeOffset": 137768,
+   "edgeCount": 788
+  },
+  {
+   "body": 166190,
+   "name": "LB3a_R",
+   "firstMs": 11,
+   "spikes": 8,
+   "driven": true,
+   "readout": false,
+   "vertexOffset": 144072,
+   "vertexCount": 572,
+   "distOffset": 147504,
+   "edgeOffset": 148648,
+   "edgeCount": 578
+  },
+  {
+   "body": 388541892,
+   "name": "LB3a_R",
+   "firstMs": 11,
+   "spikes": 9,
+   "driven": true,
+   "readout": false,
+   "vertexOffset": 186272,
+   "vertexCount": 534,
+   "distOffset": 189476,
+   "edgeOffset": 190544,
+   "edgeCount": 534
+  },
+  {
+   "body": 22758,
+   "name": "DNg67_R",
+   "firstMs": 19,
+   "spikes": 4,
+   "driven": false,
+   "readout": true,
+   "vertexOffset": 0,
+   "vertexCount": 7445,
+   "distOffset": 44670,
+   "edgeOffset": 59560,
+   "edgeCount": 7439
+  }
+ ],
+ "connections": [
+  {
+   "from": 166190,
+   "to": 22758,
+   "syn": 19
+  },
+  {
+   "from": 374701,
+   "to": 22758,
+   "syn": 5
+  },
+  {
+   "from": 374701,
+   "to": 166190,
+   "syn": 5
+  },
+  {
+   "from": 183061,
+   "to": 22758,
+   "syn": 22
+  },
+  {
+   "from": 183061,
+   "to": 166190,
+   "syn": 22
+  },
+  {
+   "from": 388541892,
+   "to": 22758,
+   "syn": 24
+  },
+  {
+   "from": 388541892,
+   "to": 166190,
+   "syn": 24
+  },
+  {
+   "from": 388541892,
+   "to": 183061,
+   "syn": 24
+  },
+  {
+   "from": 141663,
+   "to": 22758,
+   "syn": 21
+  },
+  {
+   "from": 141663,
+   "to": 166190,
+   "syn": 21
+  },
+  {
+   "from": 141663,
+   "to": 388541892,
+   "syn": 21
+  },
+  {
+   "from": 518542,
+   "to": 22758,
+   "syn": 29
+  },
+  {
+   "from": 518542,
+   "to": 141663,
+   "syn": 29
+  },
+  {
+   "from": 518542,
+   "to": 166190,
+   "syn": 29
+  },
+  {
+   "from": 518542,
+   "to": 374701,
+   "syn": 29
+  },
+  {
+   "from": 518542,
+   "to": 388541892,
+   "syn": 29
+  },
+  {
+   "from": 199308,
+   "to": 22758,
+   "syn": 35
+  },
+  {
+   "from": 199308,
+   "to": 141663,
+   "syn": 35
+  },
+  {
+   "from": 199308,
+   "to": 166190,
+   "syn": 35
+  },
+  {
+   "from": 199308,
+   "to": 374701,
+   "syn": 35
+  },
+  {
+   "from": 199308,
+   "to": 518542,
+   "syn": 35
+  },
+  {
+   "from": 199308,
+   "to": 388541892,
+   "syn": 35
+  },
+  {
+   "from": 140619,
+   "to": 22758,
+   "syn": 38
+  },
+  {
+   "from": 140619,
+   "to": 141663,
+   "syn": 38
+  },
+  {
+   "from": 140619,
+   "to": 166190,
+   "syn": 38
+  },
+  {
+   "from": 140619,
+   "to": 518542,
+   "syn": 38
+  }
+ ]
+}

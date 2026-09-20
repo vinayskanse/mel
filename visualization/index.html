@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fly Brain</title>
+<style>
+  :root {
+    --bg: #05070d;
+    --panel: rgba(14, 19, 30, 0.82);
+    --line: rgba(255, 255, 255, 0.10);
+    --text: #e8ecf4;
+    --dim: #8b96ad;
+    --accent: #ff9d3c;
+    --sez: #ff6b35;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
+  body {
+    color: var(--text);
+    font: 13px/1.5 ui-sans-serif, -apple-system, "SF Pro Text", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+  #panel {
+    position: fixed; top: 16px; left: 16px; width: 252px;
+    max-height: calc(100vh - 32px); overflow-y: auto;
+    background: var(--panel); backdrop-filter: blur(14px);
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 15px 15px;
+  }
+  #panel h1 { margin: 0 0 2px; font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
+  #panel .sub { color: var(--dim); font-size: 11px; margin-bottom: 13px; }
+  .group { border-top: 1px solid var(--line); padding-top: 11px; margin-top: 11px; }
+  .group > .label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--dim); margin-bottom: 8px;
+  }
+  .row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+  .row label { flex: 1; cursor: pointer; user-select: none; }
+  .row input[type=checkbox] { accent-color: var(--accent); cursor: pointer; margin: 0; }
+  .row .swatch { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+  .slider { display: block; margin: 9px 0 3px; }
+  .slider span { display: flex; justify-content: space-between; color: var(--dim); font-size: 11px; }
+  .slider input { width: 100%; accent-color: var(--accent); margin-top: 3px; }
+
+  button.act {
+    width: 100%; margin-top: 4px; padding: 9px 10px;
+    background: linear-gradient(180deg, #ffab52, #f5852a);
+    color: #24160a; border: 0; border-radius: 8px;
+    font: 600 13px/1 inherit; cursor: pointer;
+  }
+  button.act:hover { filter: brightness(1.07); }
+  button.act:disabled { background: #2a3040; color: #69748c; cursor: not-allowed; filter: none; }
+  button.act.ghost {
+    background: #1d2433; color: var(--text);
+    border: 1px solid var(--line); margin-top: 8px; font-weight: 500;
+  }
+  button.act.ghost:hover { background: #253048; }
+  .note { color: var(--dim); font-size: 11px; margin-top: 8px; }
+  .meter { margin-top: 9px; }
+  .meter .top { display: flex; justify-content: space-between; font-size: 11px; }
+  .meter .top b { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .meter .track { height: 3px; background: #1b2131; border-radius: 2px; margin-top: 3px; }
+  .meter .track i { display: block; height: 100%; width: 0; border-radius: 2px;
+                    background: var(--accent); transition: width .1s linear; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #48506a;
+         display: inline-block; margin-right: 6px; vertical-align: 1px; }
+  .dot.on { background: #46d17f; box-shadow: 0 0 7px #46d17f; }
+  button.act.firing { animation: pulse .45s ease-out; }
+  @keyframes pulse { from { box-shadow: 0 0 0 0 rgba(255,157,60,.6); }
+                     to   { box-shadow: 0 0 0 13px rgba(255,157,60,0); } }
+  .note b { color: #c3ccdd; font-weight: 600; }
+
+  #pathpick {
+    width: 100%; margin: 2px 0 8px; padding: 6px 8px;
+    background: #1d2433; color: var(--text);
+    border: 1px solid var(--line); border-radius: 7px;
+    font: 12px/1.3 inherit; cursor: pointer;
+  }
+  .legend { display: flex; gap: 10px; font-size: 10px; color: var(--dim); margin-bottom: 4px; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend i { width: 8px; height: 8px; border-radius: 2px; display: block; }
+
+  #pathlabel {
+    position: fixed; z-index: 4; max-width: 230px; pointer-events: none;
+    background: rgba(14, 19, 30, 0.88); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 9px;
+    padding: 8px 10px; opacity: 0; transform: translate(12px, -50%);
+    transition: opacity .18s, left .08s linear, top .08s linear;
+  }
+  #pathlabel.on { opacity: 1; }
+  #pathlabel .p-time { color: var(--accent); font-size: 10px; font-weight: 650; }
+  #pathlabel .p-text { margin-top: 2px; font-size: 13px; font-weight: 650; line-height: 1.25; }
+  #pathlabel .p-sub { margin-top: 3px; color: var(--dim); font-size: 10px; line-height: 1.35; }
+
+  #narrate {
+    position: fixed; top: 16px; right: 16px; width: 300px; z-index: 4;
+    background: var(--panel); backdrop-filter: blur(14px);
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 13px 15px; opacity: 0; transform: translateY(-6px);
+    transition: opacity .25s, transform .25s; pointer-events: none;
+  }
+  #narrate.on { opacity: 1; transform: none; }
+  #narrate .n-time {
+    font-size: 11px; color: var(--accent); font-weight: 650;
+    font-variant-numeric: tabular-nums; letter-spacing: .02em;
+  }
+  #narrate .n-text { font-size: 15px; font-weight: 600; margin-top: 3px; line-height: 1.35; }
+  #narrate .n-sub { font-size: 11px; color: var(--dim); margin-top: 5px; line-height: 1.5; }
+  :fullscreen #narrate, :-webkit-full-screen #narrate { top: 22px; right: 22px; width: 340px; }
+  #fs {
+    position: fixed; top: 16px; right: 16px; z-index: 5;
+    width: 34px; height: 34px; display: grid; place-content: center;
+    background: var(--panel); backdrop-filter: blur(14px);
+    border: 1px solid var(--line); border-radius: 9px;
+    color: var(--dim); cursor: pointer; padding: 0;
+  }
+  #fs:hover { color: var(--text); background: #1d2433; }
+  #fs svg { display: block; }
+  /* Nothing to click in full screen -- Esc and `f` both leave, so the button
+     only gets in the way of the picture. */
+  :fullscreen #fs, :-webkit-full-screen #fs { display: none; }
+  #hud {
+    position: fixed; right: 16px; bottom: 16px; text-align: right;
+    color: var(--dim); font-size: 11px; line-height: 1.7;
+  }
+  #hud b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #credit {
+    position: fixed; left: 16px; bottom: 14px; width: 252px;
+    color: #5d6880; font-size: 10px; line-height: 1.5;
+  }
+  #loading {
+    position: fixed; inset: 0; display: grid; place-content: center;
+    text-align: center; color: var(--dim); background: var(--bg);
+    transition: opacity .5s; z-index: 10;
+  }
+  #loading.done { opacity: 0; pointer-events: none; }
+  #loading .bar { width: 190px; height: 2px; background: #1b2131; margin: 14px auto 0; }
+  #loading .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<div id="panel">
+  <h1>Drosophila male CNS</h1>
+  <div class="sub">MaleCNS v1.0 &middot; 84 neuropils &middot; <span id="nsoma">&ndash;</span> somas</div>
+
+  <div class="group">
+    <div class="label">Neuropils</div>
+    <div id="compartments"></div>
+    <label class="slider">
+      <span>Opacity <em id="opv">0.07</em></span>
+      <input id="op" type="range" min="0" max="0.30" step="0.005" value="0.07">
+    </label>
+  </div>
+
+  <div class="group">
+    <div class="label">Somas</div>
+    <div id="somagroups"></div>
+    <label class="slider">
+      <span>Point size <em id="psv">1.6</em></span>
+      <input id="ps" type="range" min="0.4" max="5" step="0.1" value="1.6">
+    </label>
+  </div>
+
+  <div class="group">
+    <div class="label">Stimulus</div>
+    <div id="stimbuttons"></div>
+    <label class="slider">
+      <span>Duration <em id="durv">500 ms</em></span>
+      <input id="dur" type="range" min="50" max="2000" step="50" value="500">
+    </label>
+    <label class="slider">
+      <span>Speed <em id="spdv">0.25&times;</em></span>
+      <input id="spd" type="range" min="0.05" max="1" step="0.05" value="0.25">
+    </label>
+    <button class="act ghost" id="reset">Reset brain</button>
+    <div class="note" id="simnote">Connecting to the simulator&hellip;</div>
+
+    <div id="readouts"></div>
+  </div>
+
+  <div class="group" id="pathgroup" style="display:none">
+    <div class="label">Pathway</div>
+    <div class="row"><input type="checkbox" id="pathon"><label for="pathon">Trace one pathway</label></div>
+    <div id="pathbody" style="display:none">
+      <select id="pathpick">
+        <option value="sugar">Sugar &rarr; MN9 (proboscis)</option>
+        <option value="looming">Looming &rarr; DNp01 (giant fiber)</option>
+        <option value="smell">Smell &rarr; DNb05</option>
+        <option value="water">Water &rarr; DNg67</option>
+      </select>
+      <div class="legend">
+        <span><i style="background:#ff7a2f"></i>input</span>
+        <span><i style="background:#6f7fd8"></i>relay</span>
+        <span><i style="background:#4ade80"></i>output</span>
+      </div>
+      <button class="act" id="replay">Replay</button>
+      <label class="slider">
+        <span>Play over <em id="pdurv">8.0 s</em></span>
+        <input id="pdur" type="range" min="2" max="20" step="0.5" value="8">
+      </label>
+      <div class="note" id="pathnote"></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="label">View</div>
+    <div class="row"><input type="checkbox" id="spin" checked><label for="spin">Rotate</label></div>
+    <div class="row"><input type="checkbox" id="flipy" checked><label for="flipy">Dorsal up</label></div>
+    <button class="act ghost" id="recenter">Recentre</button>
+  </div>
+</div>
+
+<button id="fs" title="Full screen (f)" aria-label="Toggle full screen">
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none"
+       stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+    <path d="M1.5 5.2V1.5h3.7M9.8 1.5h3.7v3.7M13.5 9.8v3.7H9.8M5.2 13.5H1.5V9.8"/>
+  </svg>
+</button>
+<div id="narrate"><div class="n-time"></div><div class="n-text"></div><div class="n-sub"></div></div>
+<div id="pathlabel"><div class="p-time"></div><div class="p-text"></div><div class="p-sub"></div></div>
+<div id="hud"></div>
+<div id="credit">
+  Connectome data: MaleCNS v1.0, FlyEM (HHMI Janelia), University of Cambridge,
+  MRC LMB and Google Research. CC&nbsp;BY&nbsp;4.0. Berg,&nbsp;S. et&nbsp;al. (2026), <i>Cell</i>.
+  Simulation: Shiu et&nbsp;al. leaky integrate-and-fire, unmodified constants.
+</div>
+
+<div id="loading">
+  <div>Loading the fly brain</div>
+  <div class="bar"><i id="pbar"></i></div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// Colour per functional group. The taste region is the one the sugar stimulus
+// will drive, so it gets the warm accent and everything else stays cool.
+const GROUP_COLOR = {
+  sez:    0xff6b35,   // gnathal ganglion, prow, saddle -- where sweet taste lands
+  mb:     0x8f7cff,   // mushroom body -- where reward learning would live
+  al:     0x3fd39b,   // antennal lobes -- smell
+  optic:  0x2f6fb5,   // medulla, lobula, lamina
+  other:  0x46587a,
+};
+const GROUP_LABEL = {
+  sez: 'Taste (SEZ)', mb: 'Mushroom body', al: 'Antennal lobe',
+  optic: 'Optic lobes', other: 'Rest of brain',
+};
+const SOMA_COLOR = {
+  optic: 0x4a7fb8, central: 0x7bd0e8, visual_projection: 0x49c9a0,
+  descending: 0xffb347, ascending: 0xff8c6b, motor: 0xff6b6b,
+  sensory: 0xd6e15e, vnc: 0x9aa7c0, other: 0x6b7a95,
+};
+
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x05070d);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 100);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+
+// orient: flips the anatomy upright. spinner: the slow turn. content: carries
+// the centring offset, and does not rotate -- put the offset on `spinner` and
+// it would orbit its own axis instead of spinning in place.
+const orient = new THREE.Group();
+const spinner = new THREE.Group();
+const content = new THREE.Group();
+spinner.add(content);
+orient.add(spinner);
+scene.add(orient);
+
+const progress = document.getElementById('pbar');
+let loaded = 0;
+const bump = (n) => { loaded += n; progress.style.width = `${Math.min(100, loaded)}%`; };
+
+async function load(url, n) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
+  const out = url.endsWith('.json') ? await r.json() : await r.arrayBuffer();
+  bump(n);
+  return out;
+}
+
+const [brainMeta, brainBuf, somaMeta, somaBuf] = await Promise.all([
+  load('data/brain.json', 5), load('data/brain.bin', 55),
+  load('data/somas.json', 5), load('data/somas.bin', 25),
+]);
+
+// Both files quantise against the same box, so one transform puts them in
+// register. The dequantisation is done here on the CPU into plain float32
+// rather than left to a normalised uint16 attribute: it costs about 5 MB, and
+// it means the numbers in the buffers are the numbers the camera is framed
+// against, with no normalisation convention in between to get wrong.
+const span = new THREE.Vector3(...brainMeta.quantization.span);
+const UNIT = 1 / Math.max(span.x, span.y, span.z);   // longest axis becomes 1 unit
+
+/** uint16 0..65535 -> centred model units, x, y and z each on their own span. */
+function dequantize(q, count) {
+  const out = new Float32Array(count * 3);
+  const sx = span.x * UNIT, sy = span.y * UNIT, sz = span.z * UNIT;
+  for (let i = 0; i < count; i++) {
+    out[i * 3]     = (q[i * 3]     / 65535 - 0.5) * sx;
+    out[i * 3 + 1] = (q[i * 3 + 1] / 65535 - 0.5) * sy;
+    out[i * 3 + 2] = (q[i * 3 + 2] / 65535 - 0.5) * sz;
+  }
+  return out;
+}
+
+// ---- neuropil compartments ------------------------------------------------
+const byGroup = {};
+for (const c of brainMeta.compartments) {
+  const q = new Uint16Array(brainBuf, c.vertexOffset, c.vertexCount * 3);
+  const idx = c.indexBytes === 2
+    ? new Uint16Array(brainBuf, c.indexOffset, c.indexCount)
+    : new Uint32Array(brainBuf, c.indexOffset, c.indexCount);
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position',
+    new THREE.BufferAttribute(dequantize(q, c.vertexCount), 3));
+  geo.setIndex(new THREE.BufferAttribute(idx, 1));
+
+  const mat = new THREE.MeshBasicMaterial({
+    color: GROUP_COLOR[c.group] ?? GROUP_COLOR.other,
+    transparent: true, opacity: 0.07,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  content.add(mesh);
+  (byGroup[c.group] ??= []).push(mesh);
+}
+
+// ---- somas ----------------------------------------------------------------
+const n = somaMeta.count;
+const sPos = new THREE.BufferAttribute(
+  dequantize(new Uint16Array(somaBuf, somaMeta.positionOffset, n * 3), n), 3);
+const codes = new Uint8Array(somaBuf, somaMeta.groupOffset, n);
+
+const colors = new Float32Array(n * 3);
+const shown = new Float32Array(n);          // per-point visibility, 0 or 1
+const active = new Float32Array(n);         // per-point activity, for the live feed later
+const c = new THREE.Color();
+for (let i = 0; i < n; i++) {
+  c.setHex(SOMA_COLOR[somaMeta.groups[codes[i]]] ?? SOMA_COLOR.other);
+  colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
+  shown[i] = 1;
+}
+
+const sGeo = new THREE.BufferGeometry();
+sGeo.setAttribute('position', sPos);
+sGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+sGeo.setAttribute('shown', new THREE.BufferAttribute(shown, 1));
+sGeo.setAttribute('active', new THREE.BufferAttribute(active, 1));
+
+// A tiny shader so that, once the engine streams spikes in, lighting a neuron
+// is one float per point rather than a rebuilt buffer.
+const sMat = new THREE.ShaderMaterial({
+  uniforms: { uSize: { value: 1.6 }, uScale: { value: 1 }, uFire: { value: new THREE.Color(0xfff0c0) } },
+  vertexShader: `
+    attribute vec3 color; attribute float shown; attribute float active;
+    uniform float uSize; uniform float uScale; uniform vec3 uFire;
+    varying vec3 vColor; varying float vAlpha;
+    void main() {
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mv;
+      vColor = mix(color, uFire, active);
+      vAlpha = shown * mix(0.5, 1.0, active);
+      gl_PointSize = uSize * (1.0 + 2.2 * active) * uScale / max(-mv.z, 0.001);
+      if (shown < 0.5) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+    }`,
+  fragmentShader: `
+    varying vec3 vColor; varying float vAlpha;
+    void main() {
+      vec2 d = gl_PointCoord - vec2(0.5);
+      float r = dot(d, d);
+      if (r > 0.25) discard;
+      gl_FragColor = vec4(vColor, vAlpha * (1.0 - 4.0 * r));
+    }`,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+});
+
+const points = new THREE.Points(sGeo, sMat);
+points.renderOrder = 2;
+content.add(points);
+document.getElementById('nsoma').textContent = n.toLocaleString();
+
+// ---- camera ---------------------------------------------------------------
+// Measured, not derived. Whatever the data turns out to span, the camera is
+// placed from the real bounding sphere, so the brain cannot end up off-screen.
+const box = new THREE.Box3().setFromObject(content);
+const sphere = box.getBoundingSphere(new THREE.Sphere());
+content.position.sub(sphere.center);          // true centre onto the spin axis
+sphere.center.set(0, 0, 0);
+
+console.log('model bounding box', box.min.toArray().map((v) => v.toFixed(3)),
+            box.max.toArray().map((v) => v.toFixed(3)),
+            'radius', sphere.radius.toFixed(3));
+
+const PANEL_PX = 284;   // the control panel's box: 252 wide at a 16 px margin, plus a gap
+
+function frame(margin = 1.25) {
+  const dist = sphere.radius / Math.sin(THREE.MathUtils.degToRad(camera.fov) / 2) * margin;
+
+  // Centre the brain in the space left over beside the panel, not in the whole
+  // window, and lift it a little clear of the credit line. Both are measured in
+  // world units at the viewing distance, so they hold at any window size or DPI.
+  const worldPerPx = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) / innerHeight;
+  const dx = innerWidth > 760 ? (PANEL_PX / 2) * worldPerPx : 0;
+  const dy = 0.045 * innerHeight * worldPerPx;
+
+  controls.target.set(-dx, -dy, 0);
+  camera.position.set(-dx, sphere.radius * 0.28 - dy, dist);
+  camera.near = dist * 0.01;
+  camera.far = dist * 10;
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+frame();
+
+// ---- panel ----------------------------------------------------------------
+function checkbox(host, id, label, hex, on, fn) {
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = `<input type="checkbox" id="${id}"${on ? ' checked' : ''}>
+    <span class="swatch" style="background:#${hex.toString(16).padStart(6, '0')}"></span>
+    <label for="${id}">${label}</label>`;
+  host.appendChild(row);
+  row.querySelector('input').addEventListener('change', (e) => fn(e.target.checked));
+}
+
+const compHost = document.getElementById('compartments');
+for (const g of ['sez', 'mb', 'al', 'optic', 'other']) {
+  if (!byGroup[g]) continue;
+  checkbox(compHost, `c_${g}`, `${GROUP_LABEL[g]} <span style="color:var(--dim)">${byGroup[g].length}</span>`,
+    GROUP_COLOR[g], true, (on) => byGroup[g].forEach((m) => { m.visible = on; }));
+}
+
+const somaHost = document.getElementById('somagroups');
+const counts = {};
+for (let i = 0; i < n; i++) counts[codes[i]] = (counts[codes[i]] ?? 0) + 1;
+const visible = new Set(Object.keys(counts).map(Number));
+for (const [codeStr, count] of Object.entries(counts).sort((a, b) => b[1] - a[1])) {
+  const code = Number(codeStr);
+  const name = somaMeta.groups[code];
+  checkbox(somaHost, `s_${name}`,
+    `${name.replace(/_/g, ' ')} <span style="color:var(--dim)">${count.toLocaleString()}</span>`,
+    SOMA_COLOR[name] ?? SOMA_COLOR.other, true, (on) => {
+      on ? visible.add(code) : visible.delete(code);
+      for (let i = 0; i < n; i++) shown[i] = visible.has(codes[i]) ? 1 : 0;
+      sGeo.getAttribute('shown').needsUpdate = true;
+    });
+}
+
+const op = document.getElementById('op'), opv = document.getElementById('opv');
+op.addEventListener('input', () => {
+  opv.textContent = (+op.value).toFixed(3);
+  content.traverse((o) => { if (o.isMesh) o.material.opacity = +op.value; });
+});
+const ps = document.getElementById('ps'), psv = document.getElementById('psv');
+ps.addEventListener('input', () => {
+  psv.textContent = (+ps.value).toFixed(1);
+  sMat.uniforms.uSize.value = +ps.value;
+});
+
+const spin = document.getElementById('spin');
+const flipy = document.getElementById('flipy');
+document.getElementById('recenter').addEventListener('click', () => frame());
+
+// ---- full screen ----------------------------------------------------------
+// Safari still wants the webkit spelling, and the promise rejects rather than
+// throws if the gesture is not trusted, so both are handled.
+const fsBtn = document.getElementById('fs');
+function toggleFullscreen() {
+  const el = document.documentElement;
+  const on = document.fullscreenElement || document.webkitFullscreenElement;
+  const go = on
+    ? (document.exitFullscreen || document.webkitExitFullscreen).call(document)
+    : (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+  Promise.resolve(go).catch((e) => console.warn('full screen refused:', e));
+}
+fsBtn.addEventListener('click', toggleFullscreen);
+addEventListener('keydown', (e) => {
+  if (e.key === 'f' && !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) toggleFullscreen();
+});
+// Safari does not match :fullscreen on the webkit path, so drive the icon here.
+for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) {
+  document.addEventListener(ev, () => {
+    const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    fsBtn.style.display = on ? 'none' : 'grid';
+    setTimeout(resize, 60);     // the viewport settles a frame or two later
+  });
+}
+const applyOrient = () => { orient.rotation.x = flipy.checked ? Math.PI : 0; };
+flipy.addEventListener('change', applyOrient);
+applyOrient();
+
+// ---- loop -----------------------------------------------------------------
+const hud = document.getElementById('hud');
+let live = null, tickDecay = null;
+let last = performance.now(), fps = 0;
+
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  sMat.uniforms.uScale.value = h * 0.55;
+}
+addEventListener('resize', resize);
+resize();
+
+renderer.setAnimationLoop(() => {
+  const now = performance.now();
+  const dt = (now - last) / 1000; last = now;
+  fps += (1 / Math.max(dt, 1e-4) - fps) * 0.08;
+  if (spin.checked) spinner.rotation.y += dt * 0.22;
+  if (typeof tickDecay === 'function') tickDecay(dt);
+  if (typeof tickPathway === 'function') tickPathway(dt);
+  controls.update();
+  renderer.render(scene, camera);
+
+  hud.innerHTML = (pathGroup && pathGroup.visible)
+    ? `<b>${Math.min(pathT, pathSpan).toFixed(0)}</b> ms after the stimulus &middot; <b>${pathMeta.neurons.length}</b> neurons on the path<br>${pathMeta.stimulusLabel} \u2192 ${pathMeta.readout} &middot; <b>${fps.toFixed(0)}</b> fps`
+    : live
+    ? `<b>${live.t.toFixed(2)}</b> s brain time &middot; <b>${live.wall.toFixed(1)}</b> ms/chunk
+       &middot; <b>${(live.bio / live.wall).toFixed(2)}×</b> real time<br>
+       <b>${live.nSpikes.toLocaleString()}</b> spikes &middot;
+       <b>${live.nFiring.toLocaleString()}</b> neurons firing &middot;
+       <b>${fps.toFixed(0)}</b> fps`
+    : `<b>${fps.toFixed(0)}</b> fps &middot; <b>${n.toLocaleString()}</b> somas
+       &middot; <b>${brainMeta.compartments.length}</b> neuropils<br>drag to orbit &middot; scroll to zoom`;
+});
+
+document.getElementById('loading').classList.add('done');
+
+// ------------------------------------------------------------------ pathway
+// One traced route, from the stimulus to the motor neuron, as real skeletons.
+// Each neuron lights at the millisecond it actually first fired in the model
+// (build_pathway.py measures this); the light then runs along the branch.
+//
+// That run along the branch is a drawing convention, not data. The model uses
+// point neurons: a cell integrates and fires as a single unit, with no internal
+// geometry. What IS measured is when each neuron fires -- so the order and the
+// timing are real, and the travel within one cell is illustration. The panel
+// says so, because it would otherwise look like a claim.
+const TRAVEL = 0.28;    // fraction of the whole play time one cell's light takes
+
+// What the readout neuron actually commands, for the narration. Anything not
+// named here is described as a relay, which is what it is.
+const MEANS = {
+  'MN9_L': 'the proboscis extends', 'MN9_R': 'the proboscis extends',
+  'DNp01(GF)_R': 'the escape jump fires', 'DNp01(GF)_L': 'the escape jump fires',
+  'DNb05_R': 'a descending command leaves the brain',
+  'DNg67_R': 'a descending command leaves the brain',
+};
+
+const pathCache = {};
+let pathGroup = null, pathMeta = null, pathT = 0, pathSpan = 1, pathPlaying = false;
+let pathSteps = [], pathStep = -1;
+const pathOn = document.getElementById('pathon');
+const pathBody = document.getElementById('pathbody');
+const pathPick = document.getElementById('pathpick');
+const pdur = document.getElementById('pdur'), pdurv = document.getElementById('pdurv');
+const pathNote = document.getElementById('pathnote');
+const nar = document.getElementById('narrate');
+const narTime = nar.querySelector('.n-time'), narText = nar.querySelector('.n-text'),
+      narSub = nar.querySelector('.n-sub');
+const pathLabel = document.getElementById('pathlabel');
+const pathLabelTime = pathLabel.querySelector('.p-time');
+const pathLabelText = pathLabel.querySelector('.p-text');
+const pathLabelSub = pathLabel.querySelector('.p-sub');
+
+const PATH_VERT = `
+  attribute float dist;
+  uniform float uHead;
+  varying float vGlow;
+  void main() {
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    float d = uHead - dist;                    // >0 where the light has passed
+    float band = exp(-d * d * 42.0);           // the bright head
+    vGlow = uHead < 0.0 ? 0.0 : max(band, d > 0.0 ? 0.30 : 0.0);
+  }`;
+const PATH_FRAG = `
+  uniform vec3 uColor; uniform vec3 uFire; uniform float uBase;
+  varying float vGlow;
+  void main() {
+    vec3 c = mix(uColor, uFire, clamp(vGlow, 0.0, 1.0));
+    gl_FragColor = vec4(c, uBase + vGlow * 0.85);
+  }`;
+
+async function loadPathway(key) {
+  if (pathCache[key]) return pathCache[key];
+  const [meta, buf] = await Promise.all([
+    fetch(`data/pathway_${key}.json`).then((r) => r.ok ? r.json() : Promise.reject(r.status)),
+    fetch(`data/pathway_${key}.bin`).then((r) => r.ok ? r.arrayBuffer() : Promise.reject(r.status)),
+  ]);
+  const group = new THREE.Group();
+  for (const c of meta.neurons) {
+    const q = new Uint16Array(buf, c.vertexOffset, c.vertexCount * 3);
+    const dq = new Uint16Array(buf, c.distOffset, c.vertexCount);
+    const e = new Uint32Array(buf, c.edgeOffset, c.edgeCount * 2);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(dequantize(q, c.vertexCount), 3));
+    g.setAttribute('dist', new THREE.BufferAttribute(Float32Array.from(dq, (v) => v / 65535), 1));
+    g.setIndex(new THREE.BufferAttribute(e, 1));
+    const colour = c.driven ? 0xff7a2f : c.readout ? 0x4ade80 : 0x6f7fd8;
+    const line = new THREE.LineSegments(g, new THREE.ShaderMaterial({
+      uniforms: { uHead: { value: -1 }, uColor: { value: new THREE.Color(colour) },
+                  uFire: { value: new THREE.Color(0xfff4d0) },
+                  uBase: { value: c.readout ? 0.30 : 0.16 } },
+      vertexShader: PATH_VERT, fragmentShader: PATH_FRAG,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    }));
+    line.userData = c;
+    line.renderOrder = 3;
+    group.add(line);
+  }
+  group.visible = false;
+  content.add(group);
+
+  // One narration step per millisecond at which something new fires.
+  const byMs = new Map();
+  for (const c of meta.neurons) {
+    if (!byMs.has(c.firstMs)) byMs.set(c.firstMs, []);
+    byMs.get(c.firstMs).push(c);
+  }
+  const steps = [...byMs.entries()].sort((x, y) => x[0] - y[0]).map(([ms, cells]) => {
+    const driven = cells.filter((c) => c.driven).length;
+    const readout = cells.find((c) => c.readout);
+    if (readout) return { ms, cells, text: `${readout.name} fires`,
+      sub: `${MEANS[readout.name] || 'the brain issues a command'} — ${ms} ms after the stimulus began` };
+    if (driven === cells.length) return { ms, cells,
+      text: `${driven} ${meta.stimulusLabel.toLowerCase()} neuron${driven > 1 ? 's' : ''} firing`,
+      sub: `${meta.stimulusTypes.join(' + ')} — the sensory input` };
+    const relays = cells.filter((c) => !c.driven);
+    return { ms, cells: relays, text: `${relays.map((c) => c.name).join(', ')}`,
+      sub: `${relays.length > 1 ? 'relay neurons' : 'relay neuron'} carrying the signal onward` };
+  });
+
+  const last = Math.max(...meta.neurons.map((c) => c.firstMs));
+  pathCache[key] = { meta, group, steps, span: last * (1 + TRAVEL), last };
+  return pathCache[key];
+}
+
+function showPathway(key) {
+  for (const k in pathCache) pathCache[k].group.visible = false;
+  const p = pathCache[key];
+  pathGroup = p.group; pathMeta = p.meta; pathSteps = p.steps; pathSpan = p.span;
+  pathGroup.visible = true;
+  setNarration(false);
+  pathNote.innerHTML = `<b>${p.meta.neurons.length}</b> neurons, ${p.last} ms end to end.
+    Each lights at the millisecond it actually first fired. The travel <i>within</i>
+    one cell is drawn, not measured — the model's neurons are points with no
+    internal geometry.`;
+  framePathway(true);
+  pathT = 0; pathStep = -1; pathPlaying = true;
+}
+
+function framePathway(on) {
+  if (on && pathGroup) {
+    const box = new THREE.Box3().setFromObject(pathGroup);
+    const sph = box.getBoundingSphere(new THREE.Sphere());
+    const dist = sph.radius / Math.sin(THREE.MathUtils.degToRad(camera.fov) / 2) * 1.5;
+    controls.target.copy(sph.center);
+    camera.position.set(sph.center.x, sph.center.y + sph.radius * 0.3, sph.center.z + dist);
+    camera.near = dist * 0.005; camera.far = dist * 20;
+    camera.updateProjectionMatrix(); controls.update();
+  } else frame();
+}
+
+function setNarration(on, time, text, sub) {
+  nar.classList.toggle('on', on);
+  if (!on) return;
+  narTime.textContent = time; narText.textContent = text; narSub.textContent = sub;
+}
+
+function setPathLabel(on, time, text, sub, cells = []) {
+  pathLabel.classList.toggle('on', on);
+  if (!on) return;
+  pathLabelTime.textContent = time;
+  pathLabelText.textContent = text;
+  pathLabelSub.textContent = sub;
+  const cell = cells[0];
+  const line = cell && pathGroup
+    ? pathGroup.children.find((candidate) => candidate.userData === cell) : null;
+  if (!line) return;
+  line.geometry.computeBoundingSphere();
+  const anchor = line.geometry.boundingSphere.center.clone();
+  line.localToWorld(anchor);
+  anchor.project(camera);
+  pathLabel.style.left = `${(anchor.x * 0.5 + 0.5) * innerWidth}px`;
+  pathLabel.style.top = `${(-anchor.y * 0.5 + 0.5) * innerHeight}px`;
+}
+
+pathOn.addEventListener('change', async () => {
+  const on = pathOn.checked;
+  if (on) {
+    try { await loadPathway(pathPick.value); }
+    catch (e) {
+      pathNote.textContent = 'pathway files not found — run build_pathway.py';
+      pathOn.checked = false; return;
+    }
+  }
+  pathBody.style.display = on ? '' : 'none';
+  points.visible = !on;                       // the dot cloud only gets in the way here
+  content.traverse((o) => { if (o.isMesh) o.material.opacity = on ? 0.025 : +op.value; });
+  spin.checked = !on;
+  if (on) showPathway(pathPick.value);
+  else {
+    for (const k in pathCache) pathCache[k].group.visible = false;
+    pathGroup = null; setNarration(false); setPathLabel(false); frame();
+  }
+});
+
+pathPick.addEventListener('change', async () => {
+  if (!pathOn.checked) return;
+  try { await loadPathway(pathPick.value); showPathway(pathPick.value); }
+  catch (e) { pathNote.textContent = `pathway_${pathPick.value} not found`; }
+});
+
+document.getElementById('replay').addEventListener('click', () => {
+  pathT = 0; pathStep = -1; pathPlaying = true;
+});
+pdur.addEventListener('input', () => { pdurv.textContent = `${(+pdur.value).toFixed(1)} s`; });
+
+function tickPathway(dt) {
+  if (!pathGroup || !pathGroup.visible) { return; }
+  if (pathPlaying) {
+    pathT += dt * (pathSpan / +pdur.value);
+    if (pathT > pathSpan) { pathT = pathSpan; pathPlaying = false; }
+  }
+  const travelMs = pathSpan * TRAVEL / (1 + TRAVEL);
+  for (const line of pathGroup.children) {
+    const c = line.userData;
+    line.material.uniforms.uHead.value =
+      pathT < c.firstMs ? -1 : Math.min(1.35, (pathT - c.firstMs) / travelMs);
+  }
+  // the latest step whose moment has passed
+  let k = -1;
+  for (let i = 0; i < pathSteps.length; i++) if (pathT >= pathSteps[i].ms) k = i;
+  if (k !== pathStep) {
+    pathStep = k;
+    if (k >= 0) setPathLabel(true, `${pathSteps[k].ms} ms`, pathSteps[k].text,
+                              pathSteps[k].sub, pathSteps[k].cells);
+    else setPathLabel(true, '0 ms', `${pathMeta.stimulusLabel} applied`,
+                      'waiting for the first neuron to reach threshold');
+  }
+  if (pathStep >= 0) {
+    const step = pathSteps[pathStep];
+    setPathLabel(true, `${step.ms} ms`, step.text, step.sub, step.cells);
+  }
+}
+
+// Offer the pathway panel as soon as the files are there.
+loadPathway('sugar')
+  .then(() => { document.getElementById('pathgroup').style.display = ''; })
+  .catch(() => {});
+
+// ---------------------------------------------------------------- simulator
+// The page renders at its own pace and the brain steps at its own; the two meet
+// only here. Each frame names the neurons that fired, and `active` decays
+// between frames so a spike reads as a flash rather than a step change.
+const DECAY_PER_SEC = 3.2;
+const note = document.getElementById('simnote');
+const readoutHost = document.getElementById('readouts');
+const stimHost = document.getElementById('stimbuttons');
+const durEl = document.getElementById('dur'), durv = document.getElementById('durv');
+const spdEl = document.getElementById('spd'), spdv = document.getElementById('spdv');
+
+let ws = null, meta = null, retry = 700, lastStim = null;
+const meters = {};
+
+durEl.addEventListener('input', () => { durv.textContent = `${durEl.value} ms`; });
+spdEl.addEventListener('input', () => {
+  spdv.textContent = `${(+spdEl.value).toFixed(2)}×`;
+  send({ cmd: 'speed', value: +spdEl.value });
+});
+document.getElementById('reset').addEventListener('click', () => {
+  send({ cmd: 'reset' });
+  // Clear what the page is holding as well. The reset only empties the
+  // simulator's state; the glow already on screen is this page's, and letting it
+  // decay on its own makes a reset look like it did nothing.
+  active.fill(0);
+  sGeo.getAttribute('active').needsUpdate = true;
+  for (const m of Object.values(meters)) {
+    m.smooth = 0; m.val.textContent = '0 Hz'; m.bar.style.width = '0%';
+    m.dot.classList.remove('on');
+  }
+  live = null; lastStim = null; setNarration(false);
+});
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+
+function buildPanel(m) {
+  stimHost.innerHTML = '';
+  for (const s of m.stimuli) {
+    const b = document.createElement('button');
+    b.className = 'act';
+    b.innerHTML = `${s.label} <span style="opacity:.6;font-weight:400">${s.size}</span>`;
+    b.title = `${s.description}  (${s.size} neurons at ${s.rateHz} Hz)`;
+    b.addEventListener('click', () => {
+      send({ cmd: 'trigger', key: s.key, ms: +durEl.value });
+      lastStim = { label: s.label, size: s.size, desc: s.description,
+                   ms: +durEl.value, at: performance.now() };
+      b.classList.remove('firing'); void b.offsetWidth; b.classList.add('firing');
+    });
+    stimHost.appendChild(b);
+  }
+  readoutHost.innerHTML = '';
+  for (const name of m.readouts) {
+    const d = document.createElement('div');
+    d.className = 'meter';
+    d.innerHTML = `<div class="top"><span><span class="dot"></span>${name}</span>
+                   <b>0 Hz</b></div><div class="track"><i></i></div>`;
+    readoutHost.appendChild(d);
+    meters[name] = { bar: d.querySelector('i'), val: d.querySelector('b'),
+                     dot: d.querySelector('.dot'), smooth: 0 };
+  }
+}
+
+function onFrame(buf) {
+  const dv = new DataView(buf);
+  // Header is 24 bytes, packed "<fffIII":
+  //   0 t_bio   4 wall_ms   8 bio_ms   12 n_firing   16 n_spikes   20 n_readouts
+  const f = {
+    t: dv.getFloat32(0, true), wall: dv.getFloat32(4, true), bio: dv.getFloat32(8, true),
+    nFiring: dv.getUint32(12, true), nSpikes: dv.getUint32(16, true), rates: [],
+  };
+  const nRead = dv.getUint32(20, true);
+
+  // Check the frame against its own header before reading it. Getting an offset
+  // wrong here throws a bare RangeError from deep inside the parse, which says
+  // nothing about which field drifted; this says it plainly and once.
+  const expect = 24 + nRead * 4 + f.nFiring * 5;
+  if (buf.byteLength !== expect) {
+    if (!onFrame.warned) {
+      onFrame.warned = true;
+      console.error(`frame is ${buf.byteLength} bytes, header describes ${expect} `
+        + `(${nRead} readouts, ${f.nFiring} firing). The page and sim_server.py `
+        + 'disagree about the wire format.');
+      note.innerHTML = '<b>Wire format mismatch</b> between the page and the simulator.';
+    }
+    return;
+  }
+
+  let off = 24;
+  for (let i = 0; i < nRead; i++, off += 4) f.rates.push(dv.getFloat32(off, true));
+  const pts = new Uint32Array(buf, off, f.nFiring); off += f.nFiring * 4;
+  const cnt = new Uint8Array(buf, off, f.nFiring);
+
+  for (let i = 0; i < f.nFiring; i++) {
+    const p = pts[i];
+    // A chunk is 10 ms; 4 spikes in 10 ms is already a hard-firing neuron, so
+    // that is taken as full brightness rather than scaling to the maximum.
+    active[p] = Math.min(1, Math.max(active[p], 0.35 + cnt[i] / 4));
+  }
+  sGeo.getAttribute('active').needsUpdate = true;
+
+  meta.readouts.forEach((name, i) => {
+    const m = meters[name];
+    m.smooth += (f.rates[i] - m.smooth) * 0.25;   // a 1-neuron readout is 0 or 100 Hz per bin
+    m.val.textContent = `${m.smooth.toFixed(0)} Hz`;
+    m.bar.style.width = `${Math.min(100, m.smooth / 1.5)}%`;
+    m.dot.classList.toggle('on', m.smooth > 3);
+  });
+  live = f;
+
+  // Live narration. The pathway view has its own script; this is for the
+  // free-running brain, and it is the only explanation on screen in full
+  // screen, where the control panel is easy to miss.
+  if (!(pathGroup && pathGroup.visible)) {
+    const mn9 = meta.readouts.indexOf('MN9_L');
+    const gf = meta.readouts.findIndex((r) => r.startsWith('DNp01'));
+    const firing = mn9 >= 0 && meters['MN9_L'] && meters['MN9_L'].smooth > 3;
+    const escaping = gf >= 0 && meters[meta.readouts[gf]] &&
+                     meters[meta.readouts[gf]].smooth > 3;
+    if (!lastStim) {
+      setNarration(f.nSpikes > 0, `${f.t.toFixed(2)} s`, 'The brain is quiet',
+        'No stimulus yet. Press one of the buttons on the left.');
+    } else if (escaping) {
+      setNarration(true, `${f.t.toFixed(2)} s`, 'DNp01 firing \u2014 escape',
+        'The giant fiber is commanding the jump.');
+    } else if (firing) {
+      setNarration(true, `${f.t.toFixed(2)} s`, 'MN9 firing \u2014 proboscis extends',
+        `${lastStim.label} reached the motor neuron. ${f.nFiring.toLocaleString()} `
+        + 'neurons active this frame.');
+    } else {
+      const on = (performance.now() - lastStim.at) < lastStim.ms * 4;
+      setNarration(true, `${f.t.toFixed(2)} s`,
+        on ? `${lastStim.label} \u2014 ${lastStim.size} neurons driven`
+           : `After ${lastStim.label}`,
+        on ? lastStim.desc
+           : `${f.nFiring.toLocaleString()} neurons still firing, `
+             + `${f.nSpikes.toLocaleString()} spikes this frame.`);
+    }
+  }
+}
+
+function connect() {
+  ws = new WebSocket(`ws://${location.hostname}:8011`);
+  ws.binaryType = 'arraybuffer';
+  ws.onopen = () => { retry = 700; send({ cmd: 'speed', value: +spdEl.value }); };
+  ws.onmessage = (e) => {
+    if (typeof e.data === 'string') {
+      const m = JSON.parse(e.data);
+      if (m.type === 'hello') {
+        // Spike frames address this page's point cloud by index. If the server
+        // loaded a different somas.bin, every index would still be in range and
+        // would simply light the wrong neuron, so this is checked rather than
+        // assumed.
+        if (m.points !== n) {
+          note.innerHTML = `<b>Point cloud mismatch.</b> The page has
+            ${n.toLocaleString()} somas, the simulator has ${m.points.toLocaleString()}.
+            Rebuild with <code>build_somas.py</code> and restart
+            <code>sim_server.py</code>.`;
+          stimHost.innerHTML = '';
+          ws.close();
+          return;
+        }
+        meta = m;
+        buildPanel(m);
+        note.innerHTML = `<b>${m.neurons.toLocaleString()}</b> neurons,
+          <b>${(m.edges / 1e6).toFixed(1)}M</b> connections stepping at
+          ${m.dtMs} ms. ${(m.neurons - m.drawn).toLocaleString()} have no soma
+          position and are simulated but not drawn.`;
+      }
+    } else onFrame(e.data);
+  };
+  ws.onclose = () => {
+    note.innerHTML = 'Simulator <b>not connected</b>. Start it with '
+                   + '<code>python sim_server.py</code>.';
+    stimHost.innerHTML = '';
+    ws = null;
+    setTimeout(connect, retry);
+    retry = Math.min(retry * 1.6, 8000);
+  };
+  ws.onerror = () => ws.close();
+}
+connect();
+
+// The decay runs on the render loop, not the socket, so the glow fades smoothly
+// whatever rate frames arrive at.
+let decayLast = performance.now();
+tickDecay = (dt) => {
+  const k = Math.exp(-DECAY_PER_SEC * dt);
+  let any = false;
+  for (let i = 0; i < n; i++) {
+    if (active[i] > 0.002) { active[i] *= k; any = true; }
+    else if (active[i]) active[i] = 0;
+  }
+  if (any) sGeo.getAttribute('active').needsUpdate = true;
+};
+</script>
+</body>
+</html>

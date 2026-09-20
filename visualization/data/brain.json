@@ -1,0 +1,776 @@
+{
+ "source": "MaleCNS v1.0 fullbrain-roi-v5, FlyEM/HHMI Janelia + Google Research, CC BY 4.0",
+ "units": "nanometres",
+ "quantization": {
+  "origin": [
+   33024.0,
+   38948.99609375,
+   81408.53125
+  ],
+  "span": [
+   708546.4375,
+   399745.09375,
+   334591.46875
+  ],
+  "bits": 16
+ },
+ "gridNm": 3000.0,
+ "compartments": [
+  {
+   "name": "AB(L)",
+   "group": "other",
+   "vertexOffset": 0,
+   "vertexCount": 46,
+   "indexOffset": 276,
+   "indexCount": 282,
+   "indexBytes": 2
+  },
+  {
+   "name": "AB(R)",
+   "group": "other",
+   "vertexOffset": 840,
+   "vertexCount": 106,
+   "indexOffset": 1476,
+   "indexCount": 642,
+   "indexBytes": 2
+  },
+  {
+   "name": "AL(L)",
+   "group": "al",
+   "vertexOffset": 2760,
+   "vertexCount": 4359,
+   "indexOffset": 28914,
+   "indexCount": 27906,
+   "indexBytes": 2
+  },
+  {
+   "name": "AL(R)",
+   "group": "al",
+   "vertexOffset": 84726,
+   "vertexCount": 4378,
+   "indexOffset": 110994,
+   "indexCount": 27936,
+   "indexBytes": 2
+  },
+  {
+   "name": "AME(L)",
+   "group": "optic",
+   "vertexOffset": 166866,
+   "vertexCount": 350,
+   "indexOffset": 168966,
+   "indexCount": 2304,
+   "indexBytes": 2
+  },
+  {
+   "name": "AME(R)",
+   "group": "optic",
+   "vertexOffset": 173574,
+   "vertexCount": 815,
+   "indexOffset": 178464,
+   "indexCount": 5304,
+   "indexBytes": 2
+  },
+  {
+   "name": "AOTU(L)",
+   "group": "other",
+   "vertexOffset": 189072,
+   "vertexCount": 1375,
+   "indexOffset": 197322,
+   "indexCount": 8754,
+   "indexBytes": 2
+  },
+  {
+   "name": "AOTU(R)",
+   "group": "other",
+   "vertexOffset": 214830,
+   "vertexCount": 1463,
+   "indexOffset": 223608,
+   "indexCount": 9414,
+   "indexBytes": 2
+  },
+  {
+   "name": "ATL(L)",
+   "group": "other",
+   "vertexOffset": 242436,
+   "vertexCount": 653,
+   "indexOffset": 246354,
+   "indexCount": 4176,
+   "indexBytes": 2
+  },
+  {
+   "name": "ATL(R)",
+   "group": "other",
+   "vertexOffset": 254706,
+   "vertexCount": 638,
+   "indexOffset": 258534,
+   "indexCount": 4134,
+   "indexBytes": 2
+  },
+  {
+   "name": "AVLP(L)",
+   "group": "other",
+   "vertexOffset": 266802,
+   "vertexCount": 6263,
+   "indexOffset": 304380,
+   "indexCount": 40242,
+   "indexBytes": 2
+  },
+  {
+   "name": "AVLP(R)",
+   "group": "other",
+   "vertexOffset": 384864,
+   "vertexCount": 6023,
+   "indexOffset": 421002,
+   "indexCount": 38790,
+   "indexBytes": 2
+  },
+  {
+   "name": "BU(L)",
+   "group": "other",
+   "vertexOffset": 498582,
+   "vertexCount": 529,
+   "indexOffset": 501756,
+   "indexCount": 3618,
+   "indexBytes": 2
+  },
+  {
+   "name": "BU(R)",
+   "group": "other",
+   "vertexOffset": 508992,
+   "vertexCount": 506,
+   "indexOffset": 512028,
+   "indexCount": 3426,
+   "indexBytes": 2
+  },
+  {
+   "name": "CA(L)",
+   "group": "mb",
+   "vertexOffset": 518880,
+   "vertexCount": 1175,
+   "indexOffset": 525930,
+   "indexCount": 7566,
+   "indexBytes": 2
+  },
+  {
+   "name": "CA(R)",
+   "group": "mb",
+   "vertexOffset": 541062,
+   "vertexCount": 1366,
+   "indexOffset": 549258,
+   "indexCount": 8706,
+   "indexBytes": 2
+  },
+  {
+   "name": "CAN(L)",
+   "group": "other",
+   "vertexOffset": 566670,
+   "vertexCount": 522,
+   "indexOffset": 569802,
+   "indexCount": 3378,
+   "indexBytes": 2
+  },
+  {
+   "name": "CAN(R)",
+   "group": "other",
+   "vertexOffset": 576558,
+   "vertexCount": 568,
+   "indexOffset": 579966,
+   "indexCount": 3792,
+   "indexBytes": 2
+  },
+  {
+   "name": "CRE(L)",
+   "group": "other",
+   "vertexOffset": 587550,
+   "vertexCount": 3173,
+   "indexOffset": 606588,
+   "indexCount": 20586,
+   "indexBytes": 2
+  },
+  {
+   "name": "CRE(R)",
+   "group": "other",
+   "vertexOffset": 647760,
+   "vertexCount": 3077,
+   "indexOffset": 666222,
+   "indexCount": 19884,
+   "indexBytes": 2
+  },
+  {
+   "name": "CRN",
+   "group": "other",
+   "vertexOffset": 705990,
+   "vertexCount": 1497,
+   "indexOffset": 714972,
+   "indexCount": 9588,
+   "indexBytes": 2
+  },
+  {
+   "name": "CV-anterior",
+   "group": "other",
+   "vertexOffset": 734148,
+   "vertexCount": 3368,
+   "indexOffset": 754356,
+   "indexCount": 21438,
+   "indexBytes": 2
+  },
+  {
+   "name": "EB",
+   "group": "other",
+   "vertexOffset": 797232,
+   "vertexCount": 1591,
+   "indexOffset": 806778,
+   "indexCount": 10116,
+   "indexBytes": 2
+  },
+  {
+   "name": "EPA(L)",
+   "group": "other",
+   "vertexOffset": 827010,
+   "vertexCount": 958,
+   "indexOffset": 832758,
+   "indexCount": 6108,
+   "indexBytes": 2
+  },
+  {
+   "name": "EPA(R)",
+   "group": "other",
+   "vertexOffset": 844974,
+   "vertexCount": 842,
+   "indexOffset": 850026,
+   "indexCount": 5484,
+   "indexBytes": 2
+  },
+  {
+   "name": "FB",
+   "group": "other",
+   "vertexOffset": 860994,
+   "vertexCount": 3422,
+   "indexOffset": 881526,
+   "indexCount": 22152,
+   "indexBytes": 2
+  },
+  {
+   "name": "FLA(L)",
+   "group": "other",
+   "vertexOffset": 925830,
+   "vertexCount": 1703,
+   "indexOffset": 936048,
+   "indexCount": 10824,
+   "indexBytes": 2
+  },
+  {
+   "name": "FLA(R)",
+   "group": "other",
+   "vertexOffset": 957696,
+   "vertexCount": 1694,
+   "indexOffset": 967860,
+   "indexCount": 10722,
+   "indexBytes": 2
+  },
+  {
+   "name": "GNG",
+   "group": "sez",
+   "vertexOffset": 989304,
+   "vertexCount": 18922,
+   "indexOffset": 1102836,
+   "indexCount": 121134,
+   "indexBytes": 2
+  },
+  {
+   "name": "GOR(L)",
+   "group": "other",
+   "vertexOffset": 1345104,
+   "vertexCount": 1076,
+   "indexOffset": 1351560,
+   "indexCount": 6894,
+   "indexBytes": 2
+  },
+  {
+   "name": "GOR(R)",
+   "group": "other",
+   "vertexOffset": 1365348,
+   "vertexCount": 1051,
+   "indexOffset": 1371654,
+   "indexCount": 6744,
+   "indexBytes": 2
+  },
+  {
+   "name": "IB",
+   "group": "other",
+   "vertexOffset": 1385142,
+   "vertexCount": 3044,
+   "indexOffset": 1403406,
+   "indexCount": 19464,
+   "indexBytes": 2
+  },
+  {
+   "name": "ICL(L)",
+   "group": "other",
+   "vertexOffset": 1442334,
+   "vertexCount": 2917,
+   "indexOffset": 1459836,
+   "indexCount": 18654,
+   "indexBytes": 2
+  },
+  {
+   "name": "ICL(R)",
+   "group": "other",
+   "vertexOffset": 1497144,
+   "vertexCount": 3000,
+   "indexOffset": 1515144,
+   "indexCount": 19176,
+   "indexBytes": 2
+  },
+  {
+   "name": "IPS(L)",
+   "group": "other",
+   "vertexOffset": 1553496,
+   "vertexCount": 2463,
+   "indexOffset": 1568274,
+   "indexCount": 16008,
+   "indexBytes": 2
+  },
+  {
+   "name": "IPS(R)",
+   "group": "other",
+   "vertexOffset": 1600290,
+   "vertexCount": 2601,
+   "indexOffset": 1615896,
+   "indexCount": 16794,
+   "indexBytes": 2
+  },
+  {
+   "name": "LA(L)",
+   "group": "optic",
+   "vertexOffset": 1649484,
+   "vertexCount": 9526,
+   "indexOffset": 1706640,
+   "indexCount": 74304,
+   "indexBytes": 2
+  },
+  {
+   "name": "LA(R)",
+   "group": "optic",
+   "vertexOffset": 1855248,
+   "vertexCount": 10372,
+   "indexOffset": 1917480,
+   "indexCount": 66732,
+   "indexBytes": 2
+  },
+  {
+   "name": "LAL(L)",
+   "group": "other",
+   "vertexOffset": 2050944,
+   "vertexCount": 3567,
+   "indexOffset": 2072346,
+   "indexCount": 22992,
+   "indexBytes": 2
+  },
+  {
+   "name": "LAL(R)",
+   "group": "other",
+   "vertexOffset": 2118330,
+   "vertexCount": 3342,
+   "indexOffset": 2138382,
+   "indexCount": 21540,
+   "indexBytes": 2
+  },
+  {
+   "name": "LH(L)",
+   "group": "other",
+   "vertexOffset": 2181462,
+   "vertexCount": 2752,
+   "indexOffset": 2197974,
+   "indexCount": 17688,
+   "indexBytes": 2
+  },
+  {
+   "name": "LH(R)",
+   "group": "other",
+   "vertexOffset": 2233350,
+   "vertexCount": 2745,
+   "indexOffset": 2249820,
+   "indexCount": 17718,
+   "indexBytes": 2
+  },
+  {
+   "name": "LO(L)",
+   "group": "optic",
+   "vertexOffset": 2285256,
+   "vertexCount": 8224,
+   "indexOffset": 2334600,
+   "indexCount": 51864,
+   "indexBytes": 2
+  },
+  {
+   "name": "LO(R)",
+   "group": "optic",
+   "vertexOffset": 2438328,
+   "vertexCount": 8618,
+   "indexOffset": 2490036,
+   "indexCount": 55914,
+   "indexBytes": 2
+  },
+  {
+   "name": "LOP(L)",
+   "group": "optic",
+   "vertexOffset": 2601864,
+   "vertexCount": 6530,
+   "indexOffset": 2641044,
+   "indexCount": 42444,
+   "indexBytes": 2
+  },
+  {
+   "name": "LOP(R)",
+   "group": "optic",
+   "vertexOffset": 2725932,
+   "vertexCount": 6062,
+   "indexOffset": 2762304,
+   "indexCount": 39834,
+   "indexBytes": 2
+  },
+  {
+   "name": "ME(L)",
+   "group": "optic",
+   "vertexOffset": 2841972,
+   "vertexCount": 19305,
+   "indexOffset": 2957802,
+   "indexCount": 123192,
+   "indexBytes": 2
+  },
+  {
+   "name": "ME(R)",
+   "group": "optic",
+   "vertexOffset": 3204186,
+   "vertexCount": 19761,
+   "indexOffset": 3322752,
+   "indexCount": 129282,
+   "indexBytes": 2
+  },
+  {
+   "name": "NO",
+   "group": "other",
+   "vertexOffset": 3581316,
+   "vertexCount": 583,
+   "indexOffset": 3584814,
+   "indexCount": 3690,
+   "indexBytes": 2
+  },
+  {
+   "name": "PB",
+   "group": "other",
+   "vertexOffset": 3592194,
+   "vertexCount": 1489,
+   "indexOffset": 3601128,
+   "indexCount": 9498,
+   "indexBytes": 2
+  },
+  {
+   "name": "PED(L)",
+   "group": "mb",
+   "vertexOffset": 3620124,
+   "vertexCount": 889,
+   "indexOffset": 3625458,
+   "indexCount": 5766,
+   "indexBytes": 2
+  },
+  {
+   "name": "PED(R)",
+   "group": "mb",
+   "vertexOffset": 3636990,
+   "vertexCount": 895,
+   "indexOffset": 3642360,
+   "indexCount": 5862,
+   "indexBytes": 2
+  },
+  {
+   "name": "PLP(L)",
+   "group": "other",
+   "vertexOffset": 3654084,
+   "vertexCount": 4688,
+   "indexOffset": 3682212,
+   "indexCount": 30030,
+   "indexBytes": 2
+  },
+  {
+   "name": "PLP(R)",
+   "group": "other",
+   "vertexOffset": 3742272,
+   "vertexCount": 5090,
+   "indexOffset": 3772812,
+   "indexCount": 32586,
+   "indexBytes": 2
+  },
+  {
+   "name": "PRW",
+   "group": "sez",
+   "vertexOffset": 3837984,
+   "vertexCount": 2537,
+   "indexOffset": 3853206,
+   "indexCount": 15936,
+   "indexBytes": 2
+  },
+  {
+   "name": "PVLP(L)",
+   "group": "other",
+   "vertexOffset": 3885078,
+   "vertexCount": 4729,
+   "indexOffset": 3913452,
+   "indexCount": 30156,
+   "indexBytes": 2
+  },
+  {
+   "name": "PVLP(R)",
+   "group": "other",
+   "vertexOffset": 3973764,
+   "vertexCount": 4490,
+   "indexOffset": 4000704,
+   "indexCount": 28926,
+   "indexBytes": 2
+  },
+  {
+   "name": "SAD",
+   "group": "sez",
+   "vertexOffset": 4058556,
+   "vertexCount": 9837,
+   "indexOffset": 4117578,
+   "indexCount": 63624,
+   "indexBytes": 2
+  },
+  {
+   "name": "SCL(L)",
+   "group": "other",
+   "vertexOffset": 4244826,
+   "vertexCount": 3187,
+   "indexOffset": 4263948,
+   "indexCount": 20406,
+   "indexBytes": 2
+  },
+  {
+   "name": "SCL(R)",
+   "group": "other",
+   "vertexOffset": 4304760,
+   "vertexCount": 3205,
+   "indexOffset": 4323990,
+   "indexCount": 20496,
+   "indexBytes": 2
+  },
+  {
+   "name": "SIP(L)",
+   "group": "other",
+   "vertexOffset": 4364982,
+   "vertexCount": 3653,
+   "indexOffset": 4386900,
+   "indexCount": 23484,
+   "indexBytes": 2
+  },
+  {
+   "name": "SIP(R)",
+   "group": "other",
+   "vertexOffset": 4433868,
+   "vertexCount": 3877,
+   "indexOffset": 4457130,
+   "indexCount": 25020,
+   "indexBytes": 2
+  },
+  {
+   "name": "SLP(L)",
+   "group": "other",
+   "vertexOffset": 4507170,
+   "vertexCount": 5061,
+   "indexOffset": 4537536,
+   "indexCount": 32364,
+   "indexBytes": 2
+  },
+  {
+   "name": "SLP(R)",
+   "group": "other",
+   "vertexOffset": 4602264,
+   "vertexCount": 5151,
+   "indexOffset": 4633170,
+   "indexCount": 33012,
+   "indexBytes": 2
+  },
+  {
+   "name": "SMP(L)",
+   "group": "other",
+   "vertexOffset": 4699194,
+   "vertexCount": 4839,
+   "indexOffset": 4728228,
+   "indexCount": 30822,
+   "indexBytes": 2
+  },
+  {
+   "name": "SMP(R)",
+   "group": "other",
+   "vertexOffset": 4789872,
+   "vertexCount": 4888,
+   "indexOffset": 4819200,
+   "indexCount": 31242,
+   "indexBytes": 2
+  },
+  {
+   "name": "SPS(L)",
+   "group": "other",
+   "vertexOffset": 4881684,
+   "vertexCount": 3897,
+   "indexOffset": 4905066,
+   "indexCount": 25134,
+   "indexBytes": 2
+  },
+  {
+   "name": "SPS(R)",
+   "group": "other",
+   "vertexOffset": 4955334,
+   "vertexCount": 4100,
+   "indexOffset": 4979934,
+   "indexCount": 26268,
+   "indexBytes": 2
+  },
+  {
+   "name": "VES(L)",
+   "group": "other",
+   "vertexOffset": 5032470,
+   "vertexCount": 3320,
+   "indexOffset": 5052390,
+   "indexCount": 21480,
+   "indexBytes": 2
+  },
+  {
+   "name": "VES(R)",
+   "group": "other",
+   "vertexOffset": 5095350,
+   "vertexCount": 3446,
+   "indexOffset": 5116026,
+   "indexCount": 22254,
+   "indexBytes": 2
+  },
+  {
+   "name": "WED(L)",
+   "group": "other",
+   "vertexOffset": 5160534,
+   "vertexCount": 3935,
+   "indexOffset": 5184144,
+   "indexCount": 25368,
+   "indexBytes": 2
+  },
+  {
+   "name": "WED(R)",
+   "group": "other",
+   "vertexOffset": 5234880,
+   "vertexCount": 3998,
+   "indexOffset": 5258868,
+   "indexCount": 25806,
+   "indexBytes": 2
+  },
+  {
+   "name": "a'L(L)",
+   "group": "mb",
+   "vertexOffset": 5310480,
+   "vertexCount": 678,
+   "indexOffset": 5314548,
+   "indexCount": 4422,
+   "indexBytes": 2
+  },
+  {
+   "name": "a'L(R)",
+   "group": "mb",
+   "vertexOffset": 5323392,
+   "vertexCount": 805,
+   "indexOffset": 5328222,
+   "indexCount": 5136,
+   "indexBytes": 2
+  },
+  {
+   "name": "aL(L)",
+   "group": "mb",
+   "vertexOffset": 5338494,
+   "vertexCount": 4359,
+   "indexOffset": 5364648,
+   "indexCount": 27906,
+   "indexBytes": 2
+  },
+  {
+   "name": "aL(L)_",
+   "group": "mb",
+   "vertexOffset": 5420460,
+   "vertexCount": 1106,
+   "indexOffset": 5427096,
+   "indexCount": 7122,
+   "indexBytes": 2
+  },
+  {
+   "name": "aL(R)",
+   "group": "mb",
+   "vertexOffset": 5441340,
+   "vertexCount": 4378,
+   "indexOffset": 5467608,
+   "indexCount": 27936,
+   "indexBytes": 2
+  },
+  {
+   "name": "aL(R)_",
+   "group": "mb",
+   "vertexOffset": 5523480,
+   "vertexCount": 1246,
+   "indexOffset": 5530956,
+   "indexCount": 8082,
+   "indexBytes": 2
+  },
+  {
+   "name": "b'L(L)",
+   "group": "mb",
+   "vertexOffset": 5547120,
+   "vertexCount": 947,
+   "indexOffset": 5552802,
+   "indexCount": 6174,
+   "indexBytes": 2
+  },
+  {
+   "name": "b'L(R)",
+   "group": "mb",
+   "vertexOffset": 5565150,
+   "vertexCount": 858,
+   "indexOffset": 5570298,
+   "indexCount": 5550,
+   "indexBytes": 2
+  },
+  {
+   "name": "bL(L)",
+   "group": "mb",
+   "vertexOffset": 5581398,
+   "vertexCount": 851,
+   "indexOffset": 5586504,
+   "indexCount": 5460,
+   "indexBytes": 2
+  },
+  {
+   "name": "bL(R)",
+   "group": "mb",
+   "vertexOffset": 5597424,
+   "vertexCount": 841,
+   "indexOffset": 5602470,
+   "indexCount": 5502,
+   "indexBytes": 2
+  },
+  {
+   "name": "gL(L)",
+   "group": "mb",
+   "vertexOffset": 5613474,
+   "vertexCount": 2363,
+   "indexOffset": 5627652,
+   "indexCount": 15270,
+   "indexBytes": 2
+  },
+  {
+   "name": "gL(R)",
+   "group": "mb",
+   "vertexOffset": 5658192,
+   "vertexCount": 2220,
+   "indexOffset": 5671512,
+   "indexCount": 14202,
+   "indexBytes": 2
+  }
+ ]
+}

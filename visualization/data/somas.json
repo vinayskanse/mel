@@ -1,0 +1,31 @@
+{
+ "source": "MaleCNS v1.0 body annotations, FlyEM/HHMI Janelia + Google Research, CC BY 4.0",
+ "voxelNm": 8.0,
+ "count": 124314,
+ "positionOffset": 0,
+ "groupOffset": 745884,
+ "groups": [
+  "other",
+  "optic",
+  "central",
+  "visual_projection",
+  "descending",
+  "ascending",
+  "motor",
+  "sensory",
+  "vnc"
+ ],
+ "quantization": {
+  "origin": [
+   33024.0,
+   38948.99609375,
+   81408.53125
+  ],
+  "span": [
+   708546.4375,
+   399745.09375,
+   334591.46875
+  ],
+  "bits": 16
+ }
+}
