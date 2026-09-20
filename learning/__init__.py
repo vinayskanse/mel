@@ -5,11 +5,12 @@ could not place, so a song costs one API call in its life however often it is
 played. See README.md.
 """
 
+from .events import bus
 from .memory import LearningMemory
 from .models import Recognition, Reward
 
 __all__ = ["Answer", "Ears", "LearningMemory", "Recognition", "Reward",
-           "ShazamTeacher", "Song", "Utterance"]
+           "ShazamTeacher", "Song", "Utterance", "bus"]
 
 # The rest are fetched on first use. Importing `ears` here instead would make
 # `python -m learning.ears` load the module twice and warn about it, and that

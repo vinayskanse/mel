@@ -28,7 +28,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import audio, says
+from . import audio, events, says
 from . import fingerprint as fpmod
 from .memory import LearningMemory, slug
 from .models import Recognition
@@ -81,6 +81,7 @@ class Ears:
     _retries: int = 0
     _quiet_since: float = 0.0
     _now: bool = False
+    _forgotten: bool = True     # true until sound is first heard, so arming is not "music"
 
     # ---- what the buttons do ----------------------------------------------
 
@@ -90,7 +91,9 @@ class Ears:
         if not on:
             self.gate.forget()
             self._buffer.clear()
-        return says.listening(self.rng) if on else says.quiet(self.rng)
+        said = says.listening(self.rng) if on else says.quiet(self.rng)
+        events.bus.publish("listening", armed=on, say=said.as_dict())
+        return said
 
     def ask_now(self) -> None:
         """A double click on `+`: name this one, without waiting for the gate."""
@@ -98,10 +101,22 @@ class Ears:
         self._now = True
         self._next_ask = 0.0
         self._retries = 0
+        events.bus.publish("identify")
 
     # ---- the decision ------------------------------------------------------
 
     def hear(self, pcm: bytes, rate: int = audio.BOARD_RATE) -> Answer:
+        """Guess at a clip, and tell everyone else what was decided.
+
+        The decision itself is `_decide`; this is the one place it leaves the
+        package from, so the brain and the board hear about every hearing
+        without either of them having to ask.
+        """
+        answer = self._decide(pcm, rate)
+        events.bus.publish("heard", **answer.as_dict())
+        return answer
+
+    def _decide(self, pcm: bytes, rate: int = audio.BOARD_RATE) -> Answer:
         """Guess at a clip, ask about it if the guess fails, and remember.
 
         Four things can happen, and only one of them costs anything:
@@ -171,10 +186,15 @@ class Ears:
         if not playing and not self._now:
             if not self._quiet_since:
                 self._quiet_since = now
-            elif now - self._quiet_since > FORGET:
+            elif now - self._quiet_since > FORGET and not self._forgotten:
                 self._next_ask = 0.0
                 self._retries = 0
+                self._forgotten = True
+                events.bus.publish("quiet", say=says.quiet(self.rng).as_dict())
             return None
+        if self._quiet_since or self._forgotten:
+            self._forgotten = False
+            events.bus.publish("music", say=says.listening(self.rng).as_dict())
         self._quiet_since = 0.0
 
         if now < self._next_ask or len(self._buffer) < want:

@@ -34,7 +34,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from . import audio
+from . import audio, events
 from .ears import Ears
 from .memory import LearningMemory
 from .models import Reward
@@ -68,7 +68,12 @@ class LearningApp:
         return self.ears.hear(pcm, rate).as_dict()
 
     def reward(self, fingerprint: str, kind: str, amount: float = 1.0) -> dict[str, Any]:
+        """Sugar or bitter, after a guess. Worth announcing: this is the only
+        moment the fly is told it was right, and the brain has a real taste
+        pathway waiting for exactly that word."""
         updated = self.memory.reward(Reward(fingerprint, kind, amount))
+        events.bus.publish("reward", reward=kind, amount=amount,
+                           answer=updated.as_dict())
         return {"answer": updated.as_dict()}
 
 
