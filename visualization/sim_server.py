@@ -111,6 +111,7 @@ READOUTS = {
 # How long the page should be told a stimulus lasted, when something other than
 # a button press fired it. The page uses it only to time its own narration.
 DEFAULT_MS = 500.0
+DEVICE_SPEED = 0.05            # 20x slow motion for a physical Sugar feed
 
 
 def soma_point_of(neuron_ids: np.ndarray, soma_ids_path: Path) -> np.ndarray:
@@ -269,8 +270,6 @@ async def main() -> None:
     print(f"  ready in {time.perf_counter() - t0:.1f}s")
 
     fly = Fly()
-    link = DeviceLink()
-    link.start()
     app = start_learning(fly)
 
     loop = asyncio.get_running_loop()
@@ -301,6 +300,21 @@ async def main() -> None:
             loop.call_soon_threadsafe(deliver)
         except RuntimeError:            # the loop is closing
             pass
+
+    def device_event(event: str) -> None:
+        if event == "feed" and sim.request("sugar", DEFAULT_MS):
+            # A button on the buddy is a presentation, not a quick control
+            # adjustment: slow the running brain to 1/20 real-time so its
+            # Sugar pathway can be followed on the screen.
+            sim.speed = DEVICE_SPEED
+            push({"type": "fired", "key": "sugar", "ms": DEFAULT_MS,
+                  # A physical feed is the presentation trigger.  It must not
+                  # be hidden by a previously disabled auto-trace checkbox or
+                  # an open manual pathway view in the browser.
+                  "source": "device", "trace": True, "speed": DEVICE_SPEED})
+
+    link = DeviceLink(on_event=device_event)
+    link.start()
 
     if app is not None:
         from learning.events import bus

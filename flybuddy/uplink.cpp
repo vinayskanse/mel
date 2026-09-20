@@ -204,6 +204,10 @@ void update() {
 bool joined() { return WiFi.status() == WL_CONNECTED; }
 bool connected() { return host.connected(); }
 
+void reportFeed() {
+  if (host.connected()) host.println("FEED");
+}
+
 const char* status() {
   if (WiFi.status() != WL_CONNECTED) return "wifi";
   if (!host.connected()) return hostPort ? "dialling" : "looking";

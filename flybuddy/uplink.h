@@ -15,6 +15,7 @@ namespace uplink {
 
 void begin();
 void update();          // call once a frame; never blocks
+void reportFeed();      // tell the web visualization the local + button was pressed
 
 bool joined();          // on the WiFi
 bool connected();       // and talking to the laptop

@@ -153,6 +153,7 @@ void loop() {
   // the air it finishes its flight and eats when it lands.
   if (buttons::pressedPlus()) {
     fly::feed();
+    uplink::reportFeed();
     Serial.println("fly: fed");
   }
   // "-" twice mutes it. Once does nothing on purpose: a single press on a

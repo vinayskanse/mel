@@ -30,7 +30,20 @@
     border: 1px solid var(--line); border-radius: 12px;
     padding: 14px 15px 15px;
   }
+  .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   #panel h1 { margin: 0 0 2px; font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
+  .panel-close, #sidebarOpen {
+    border: 1px solid var(--line); background: #1d2433; color: var(--dim);
+    cursor: pointer; display: grid; place-content: center;
+  }
+  .panel-close { width: 22px; height: 22px; border-radius: 6px; font: 20px/1 sans-serif; }
+  .panel-close:hover, #sidebarOpen:hover { color: var(--text); background: #253048; }
+  #sidebarOpen {
+    position: fixed; top: 16px; left: 16px; z-index: 5;
+    width: 34px; height: 34px; border-radius: 9px; font-size: 17px; display: none;
+  }
+  body.sidebar-closed #panel { display: none; }
+  body.sidebar-closed #sidebarOpen { display: grid; }
   #panel .sub { color: var(--dim); font-size: 11px; margin-bottom: 13px; }
   .group { border-top: 1px solid var(--line); padding-top: 11px; margin-top: 11px; }
   .group > .label {
@@ -129,7 +142,9 @@
      left is the brain, the narration and the fly. `body.fs` rather than
      `:fullscreen` because Safari's webkit path does not match the pseudo-class,
      and the button below is already driven from script for the same reason. */
-  body.fs #panel, body.fs #credit { display: none; }
+  /* Full screen keeps the controls available; only the attribution line is
+     removed to give the brain the lower edge of the viewport. */
+  body.fs #credit { display: none; }
   body.fs #rail { top: 22px; right: 22px; width: 344px; }
   body.fs #hud { bottom: 22px; right: 22px; }
 
@@ -137,9 +152,11 @@
     background: var(--panel); backdrop-filter: blur(14px);
     border: 1px solid var(--line); border-radius: 12px;
     padding: 12px 14px 13px; pointer-events: auto;
+    /* The ears remain connected to the buddy, but their status card is not
+       part of the visualization presentation. */
     display: none;
   }
-  #flycard.on { display: block; }
+  #flycard.on { display: none; }
   #flycard .f-head {
     display: flex; align-items: center; gap: 6px;
     font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim);
@@ -200,7 +217,10 @@
 <canvas id="gl"></canvas>
 
 <div id="panel">
-  <h1>Drosophila male CNS</h1>
+  <div class="panel-title">
+    <h1>Drosophila male CNS</h1>
+    <button class="panel-close" id="sidebarClose" title="Hide controls" aria-label="Hide controls">&times;</button>
+  </div>
   <div class="sub">MaleCNS v1.0 &middot; 84 neuropils &middot; <span id="nsoma">&ndash;</span> somas</div>
 
   <div class="group">
@@ -285,6 +305,8 @@
     <button class="act ghost" id="recenter">Recentre</button>
   </div>
 </div>
+
+<button id="sidebarOpen" title="Show controls" aria-label="Show controls">&#9776;</button>
 
 <button id="fs" title="Full screen (f)" aria-label="Toggle full screen">
   <svg width="15" height="15" viewBox="0 0 15 15" fill="none"
@@ -553,11 +575,12 @@ function frame(margin = 1.25, secs = 0) {
   // Centre the brain in the space left over beside the panel, not in the whole
   // window, and lift it a little clear of the credit line. Both are measured in
   // world units at the viewing distance, so they hold at any window size or DPI.
-  // In full screen there is no panel and no credit line, so there is no offset
-  // either -- which is what puts the brain in the middle when you press `f`.
+  // The control panel stays available in full screen, so reserve its width in
+  // both views. The credit line itself disappears in full screen.
   const worldPerPx = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) / innerHeight;
   const full = isFullscreen();
-  const dx = (innerWidth > 760 && !full) ? (PANEL_PX / 2) * worldPerPx : 0;
+  const panelVisible = !document.body.classList.contains('sidebar-closed');
+  const dx = innerWidth > 760 && panelVisible ? (PANEL_PX / 2) * worldPerPx : 0;
   const dy = full ? 0 : 0.045 * innerHeight * worldPerPx;
 
   moveCamera(new THREE.Vector3(-dx, -dy, 0),
@@ -614,18 +637,34 @@ ps.addEventListener('input', () => {
 const spin = document.getElementById('spin');
 const flipy = document.getElementById('flipy');
 document.getElementById('recenter').addEventListener('click', () => frame());
+function setSidebar(open) {
+  document.body.classList.toggle('sidebar-closed', !open);
+  // Wait one frame for the panel's display state to settle before moving the
+  // camera into (or out of) the freed-up space.
+  requestAnimationFrame(() => frame(1.25, 0.45));
+}
+document.getElementById('sidebarClose').addEventListener('click', () => setSidebar(false));
+document.getElementById('sidebarOpen').addEventListener('click', () => setSidebar(true));
 
 // ---- full screen ----------------------------------------------------------
 // Safari still wants the webkit spelling, and the promise rejects rather than
 // throws if the gesture is not trusted, so both are handled.
 const fsBtn = document.getElementById('fs');
-function toggleFullscreen() {
+function enterFullscreen() {
+  if (isFullscreen()) return Promise.resolve();
   const el = document.documentElement;
-  const on = document.fullscreenElement || document.webkitFullscreenElement;
-  const go = on
-    ? (document.exitFullscreen || document.webkitExitFullscreen).call(document)
-    : (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
-  Promise.resolve(go).catch((e) => console.warn('full screen refused:', e));
+  const request = el.requestFullscreen || el.webkitRequestFullscreen;
+  return Promise.resolve(request.call(el)).catch((e) => {
+    console.warn('full screen refused:', e);
+  });
+}
+function toggleFullscreen() {
+  if (!isFullscreen()) {
+    enterFullscreen();
+    return;
+  }
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  Promise.resolve(exit.call(document)).catch((e) => console.warn('full screen refused:', e));
 }
 fsBtn.addEventListener('click', toggleFullscreen);
 addEventListener('keydown', (e) => {
@@ -877,8 +916,17 @@ const AUTO_HOLD = 1.6;      // seconds to sit on the finished path before leavin
 const autoOn = document.getElementById('autotrace');
 let autoTracing = false, autoHold = 0, autoFrom = null;
 
-async function autoTrace(key) {
-  if (!autoOn.checked || pathOn.checked) return;    // the manual trace owns the view
+async function autoTrace(key, force = false) {
+  if (!force && (!autoOn.checked || pathOn.checked)) return;
+  // A physical feed is an immediate Sugar presentation. Return from a manual
+  // route first, otherwise its hidden soma cloud and dimmed brain make the
+  // automatic trace appear not to have started.
+  if (force && pathOn.checked) {
+    pathOn.checked = false;
+    pathBody.style.display = 'none';
+    points.visible = true;
+    content.traverse((o) => { if (o.isMesh) o.material.opacity = +op.value; });
+  }
   let p;
   try { p = await loadPathway(key); }
   catch (e) { return; }                             // no traced route for this one
@@ -1079,11 +1127,17 @@ function onFlyAck(m) {
 // or the fly being told its guess was right. One message means the narration
 // and the automatic trace do not have to care which.
 function onFired(m) {
+  // The buddy's physical feed is a 20x-slow presentation. Keep every open
+  // page's speed control honest with the server that is actually stepping it.
+  if (typeof m.speed === 'number') {
+    spdEl.value = m.speed;
+    spdv.textContent = `${m.speed.toFixed(2)}×`;
+  }
   const s = meta && meta.stimuli.find((x) => x.key === m.key);
   lastStim = { label: s ? s.label : m.key, size: s ? s.size : 0,
                desc: m.why || (s ? s.description : ''),
                ms: m.ms, at: performance.now() };
-  autoTrace(m.key);
+  autoTrace(m.key, !!m.trace);
 }
 
 durEl.addEventListener('input', () => { durv.textContent = `${durEl.value} ms`; });
@@ -1110,6 +1164,14 @@ function send(obj) {
   if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
 }
 
+// Demo shortcut: a double-click on the brain substitutes for handing the
+// buddy sugar. It uses the normal server trigger, so the live activity and
+// Sugar pathway trace remain exactly the same as a real device event.
+canvas.addEventListener('dblclick', () => {
+  enterFullscreen();
+  send({ cmd: 'trigger', key: 'sugar', ms: +durEl.value });
+});
+
 function buildPanel(m) {
   stimHost.innerHTML = '';
   for (const s of m.stimuli) {
@@ -1123,6 +1185,10 @@ function buildPanel(m) {
     b.title = `${s.description}\n\n${s.size} neurons at ${s.rateHz} Hz`
       + (s.types && s.types.length ? `\n${s.types.join(', ')}` : '');
     b.addEventListener('click', () => {
+      // Sugar is the presentation trigger: request full screen while this
+      // trusted button gesture is still active, then start the same server-side
+      // simulation used by every other input source.
+      if (s.key === 'sugar') enterFullscreen();
       // The server echoes every stimulus back as a `fired` message, and that
       // is what sets the narration and starts the trace -- so a press here and
       // a thumbs-up on the fly card go down exactly the same path.

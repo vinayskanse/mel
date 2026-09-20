@@ -18,8 +18,9 @@ parser worth the name:
     SUB <text>               the bubble's second line
     PING                     keep the socket honest
 
-Board to host is `HELLO <name>` and `PONG`, and nothing else. The board has
-never had anything to report that the host did not already know.
+Board to host is `HELLO <name>`, `PONG`, and `FEED` when its physical feed
+button is pressed. The feed already happens locally; the event only lets the
+browser run the matching sugar pathway.
 
 Sends never block the caller: a board that has gone to sleep mid-write would
 otherwise stall the simulation thread that is writing to it, and the fly's face
@@ -31,7 +32,7 @@ from __future__ import annotations
 import socket
 import threading
 import time
-from typing import Any
+from typing import Any, Callable
 
 PORT = 8022
 BEACON_PORT = 8023
@@ -62,10 +63,12 @@ class DeviceLink:
     """Every board on the network, and the last thing each was told."""
 
     def __init__(self, port: int = PORT, beacon_port: int = BEACON_PORT,
-                 announce: bool = True):
+                 announce: bool = True,
+                 on_event: Callable[[str], None] | None = None):
         self.port = port
         self.beacon_port = beacon_port
         self.announce = announce
+        self.on_event = on_event
         self._boards: dict[socket.socket, str] = {}
         self._lock = threading.Lock()
         # What a board that connects late needs in order to catch up. Only the
@@ -106,7 +109,11 @@ class DeviceLink:
                 conn, addr = srv.accept()
             except OSError:
                 break
-            conn.settimeout(5)
+            # The link is intentionally quiet between heartbeats.  A five
+            # second timeout here used to make the reader drop an otherwise
+            # healthy board before the first PING, so physical button presses
+            # could never reach the simulation reliably.
+            conn.settimeout(None)
             # Nagle would hold a 12-byte MOOD line waiting for company, which on
             # a face that is meant to react is exactly the wrong trade.
             conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -119,16 +126,31 @@ class DeviceLink:
             threading.Thread(target=self._drain, args=(conn,), daemon=True).start()
 
     def _drain(self, conn: socket.socket) -> None:
-        """Read whatever the board says and throw it away, so a half-closed
-        socket is noticed here rather than on the next write."""
+        """Read board events and notice a half-closed socket promptly."""
+        pending = bytearray()
         try:
             while True:
-                if not conn.recv(128):
+                chunk = conn.recv(128)
+                if not chunk:
                     break
+                pending.extend(chunk)
+                while b"\n" in pending:
+                    raw, _, pending = pending.partition(b"\n")
+                    self._received(raw.rstrip(b"\r").decode("ascii", "ignore"))
+                if len(pending) > 256:
+                    pending.clear()
         except OSError:
             pass
         finally:
             self._drop(conn)
+
+    def _received(self, line: str) -> None:
+        if line != "FEED" or self.on_event is None:
+            return
+        try:
+            self.on_event("feed")
+        except Exception as error:
+            print(f"[device] event handler failed: {error}")
 
     def _drop(self, conn: socket.socket) -> None:
         with self._lock:

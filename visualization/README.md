@@ -121,6 +121,10 @@ SAY <text> / SUB <text>  the two lines of the bubble under its face
 PING                     keep the socket honest
 ```
 
+The board sends `FEED` in the other direction when its physical `+` button is
+pressed. The crumb is handled on the board; the server uses the event to trigger
+the sugar pathway on every connected visualization, including full screen.
+
 **A guest network with client isolation passes neither broadcast nor
 peer-to-peer traffic**, and then the board simply never connects. Nothing else
 depends on it: the page and the brain do not know or care whether a board is

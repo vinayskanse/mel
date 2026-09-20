@@ -178,6 +178,14 @@ class TestBridge(unittest.TestCase):
 
 
 class TestDeviceLines(unittest.TestCase):
+    def test_a_physical_feed_is_reported_to_the_host(self):
+        seen = []
+        link = device.DeviceLink(announce=False, on_event=seen.append)
+        link._received("HELLO flybuddy")
+        link._received("PONG")
+        link._received("FEED")
+        self.assertEqual(seen, ["feed"])
+
     def test_a_late_board_is_caught_up_on_state_but_not_on_events(self):
         link = FakeLink()
         link.apply(reactions.react(HEARD_KNOWN), say="that's Perfect", sub="Ed Sheeran")
